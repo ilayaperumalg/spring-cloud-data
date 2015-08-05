@@ -185,7 +185,8 @@ public class StreamController {
 	 */
 	@RequestMapping(value = "/deployments/{name}", method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.CREATED)
-	public void deploy(@PathVariable("name") String name, @RequestParam(required = false) String properties) throws Exception {
+	public void deploy(@PathVariable("name") String name, @RequestParam(required = false) String properties) throws
+			Exception {
 		StreamDefinition stream = this.repository.findOne(name);
 		Assert.notNull(stream, String.format("no stream defined: %s", name));
 		deployStream(stream);
