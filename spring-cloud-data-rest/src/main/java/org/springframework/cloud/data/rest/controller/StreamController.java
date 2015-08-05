@@ -107,7 +107,6 @@ public class StreamController {
 	@ResponseStatus(HttpStatus.OK)
 	public PagedResources<StreamDefinitionResource> list(Pageable pageable,
 			PagedResourcesAssembler<StreamDefinition> assembler) {
-
 		return assembler.toResource(repository.findAll(pageable), streamAssembler);
 	}
 
@@ -140,6 +139,7 @@ public class StreamController {
 	@RequestMapping(value = "/definitions/{name}", method = RequestMethod.DELETE)
 	@ResponseStatus(HttpStatus.OK)
 	public void delete(@PathVariable("name") String name) throws Exception {
+		undeploy(name);
 		this.repository.delete(name);
 	}
 
@@ -149,6 +149,7 @@ public class StreamController {
 	@RequestMapping(value = "/definitions", method = RequestMethod.DELETE)
 	@ResponseStatus(HttpStatus.OK)
 	public void deleteAll() throws Exception {
+		undeployAll();
 		this.repository.deleteAll();
 	}
 
