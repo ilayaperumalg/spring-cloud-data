@@ -46,7 +46,7 @@ import org.springframework.web.context.WebApplicationContext;
  * @author Michael Minella
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AdminConfiguration.class, TestDependencies.class})
+@ContextConfiguration(classes = { TestDependencies.class, AdminConfiguration.class})
 @WebAppConfiguration
 public class TaskControllerTests {
 

@@ -20,6 +20,9 @@ import static org.springframework.hateoas.config.EnableHypermediaSupport.Hyperme
 
 import java.util.List;
 
+import org.springframework.boot.actuate.metrics.repository.MetricRepository;
+import org.springframework.boot.actuate.metrics.repository.redis.RedisMetricRepository;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.cloud.data.module.deployer.ModuleDeployer;
 import org.springframework.cloud.data.module.deployer.local.LocalModuleDeployer;
 import org.springframework.cloud.data.module.registry.ModuleRegistry;
@@ -35,6 +38,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.web.config.EnableSpringDataWebSupport;
 import org.springframework.hateoas.config.EnableHypermediaSupport;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -51,6 +55,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
  * @author Marius Bogoevici
  * @author Patrick Peralta
  * @author Thomas Risberg
+ * @author Ilayaperumal Gopinathan
  */
 @Configuration
 @EnableHypermediaSupport(type = HAL)
@@ -96,6 +101,12 @@ public class AdminConfiguration {
 				converters.add(new MappingJackson2HttpMessageConverter());
 			}
 		};
+	}
+
+	@Bean
+	@ConditionalOnMissingBean(MetricRepository.class)
+	public RedisMetricRepository redisMetricRepository(RedisConnectionFactory redisConnectionFactory) {
+		return new RedisMetricRepository(redisConnectionFactory);
 	}
 
 }
