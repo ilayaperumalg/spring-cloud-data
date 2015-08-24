@@ -89,6 +89,7 @@
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-lattice-connector</artifactId>
+			<version>${spring-cloud-lattice.version}</version>
 			<optional>true</optional>
 		</dependency>
 		<!-- dependency to connect to detected cloud services -->

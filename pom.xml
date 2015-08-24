@@ -54,11 +54,6 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-lattice-connector</artifactId>
-				<version>${spring-cloud-lattice.version}</version>
-			</dependency>
 		</dependencies>
 	</dependencyManagement>
 	<repositories>
