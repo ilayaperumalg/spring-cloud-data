@@ -2,9 +2,26 @@ server:
   port: 9393
 management:
   contextPath: /management
+cloudfoundry:
+  apiEndpoint: https://api.run.pez.pivotal.io
+  organization: igopinathan
+  space: development
+  domain: cfapps.pez.pivotal.io
+  services: ilaya-redis
+
 security:
   basic:
     enabled: false
+  oauth2:
+    client:
+      access-token-uri: https://login.run.pez.pivotal.io/oauth/token
+      grantType: password
+      client-id: cf
+      password: pivotal
+      user-authorization-uri: https://login.run.pez.pivotal.io/oauth/authorize
+      username: igopinathan+pez@pivotal.io
+    resource:
+      userInfoUri: https://uaa.run.pez.pivotal.io/userinfo
 spring:
   application:
     name: spring-cloud-data-admin
