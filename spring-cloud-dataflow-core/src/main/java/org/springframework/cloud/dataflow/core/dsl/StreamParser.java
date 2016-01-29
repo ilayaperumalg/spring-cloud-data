@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 the original author or authors.
+ * Copyright 2015-2016 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Map;
  *
  * @author Andy Clement
  * @author Patrick Peralta
+ * @author Ilayaperumal Gopinathan
  */
 public class StreamParser extends ModuleParser {
 
@@ -229,6 +230,7 @@ public class StreamParser extends ModuleParser {
 
 		if (tokens.hasNext() && tokenList.get(position).getKind() == TokenKind.IDENTIFIER) {
 			String prefix = tokenList.get(position).data;
+			//todo:
 			if (isLegalChannelPrefix(prefix)) {
 				if (tokens.position() + 1 < size && tokenList.get(position + 1).getKind() == TokenKind.COLON) {
 					return true;
@@ -265,7 +267,7 @@ public class StreamParser extends ModuleParser {
 				break;
 			}
 		}
-		if (!gtBeforePipe || !looksLikeChannel(tokens.position())) {
+		if (!gtBeforePipe) {
 			return null;
 		}
 
@@ -341,7 +343,7 @@ public class StreamParser extends ModuleParser {
 	private ChannelNode eatChannelReference(boolean tapAllowed) {
 		Tokens tokens = getTokens();
 		Token firstToken = tokens.next();
-		if (!firstToken.isIdentifier() || !isLegalChannelPrefix(firstToken.data)) {
+		if (!firstToken.isIdentifier()) {
 			tokens.raiseException(firstToken.startPos,
 					tapAllowed
 							? DSLMessage.EXPECTED_CHANNEL_PREFIX_QUEUE_TOPIC_TAP
@@ -350,107 +352,24 @@ public class StreamParser extends ModuleParser {
 		}
 		List<Token> channelScopeComponents = new ArrayList<Token>();
 		channelScopeComponents.add(firstToken);
-		while (tokens.peek(TokenKind.COLON)) {
-			if (!tokens.isNextAdjacent()) {
-				tokens.raiseException(tokens.peek().startPos,
-						DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
-			}
-			tokens.next(); // skip colon
-			if (!tokens.isNextAdjacent()) {
-				tokens.raiseException(tokens.peek().startPos,
-						DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
-			}
-			channelScopeComponents.add(tokens.eat(TokenKind.IDENTIFIER));
-		}
 		List<Token> channelReferenceComponents = new ArrayList<Token>();
-		if (tapAllowed && firstToken.data.equalsIgnoreCase("tap")) {
-			if (tokens.peek(TokenKind.DOT)) {
-				if (channelScopeComponents.size() < 3) {
-					tokens.raiseException(firstToken.startPos,
-							DSLMessage.TAP_NEEDS_THREE_COMPONENTS);
-				}
-				String tokenData = channelScopeComponents.get(1).data;
-				// for Stream, tap:stream:XXX - the channel name is always indexed
-				// for Job, tap:job:XXX - the channel name can have "." in case of job notification channels
-				if (!tokenData.equalsIgnoreCase("stream") && !tokenData.equalsIgnoreCase("task")) {
-					tokens.raiseException(tokens.peek().startPos,
-							DSLMessage.ONLY_A_TAP_ON_A_STREAM_OR_TASK_CAN_BE_INDEXED);
-				}
-			}
-			while (tokens.peek(TokenKind.DOT)) {
-				if (!tokens.isNextAdjacent()) {
-					tokens.raiseException(tokens.peek().startPos,
-							DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
-				}
-				tokens.next(); // skip dot
-				if (!tokens.isNextAdjacent()) {
-					tokens.raiseException(tokens.peek().startPos,
-							DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
-				}
-				channelReferenceComponents.add(tokens.eat(TokenKind.IDENTIFIER));
-			}
-		}
-		else if (tokens.peek(TokenKind.DOT)) {
-			if (tapAllowed) {
+		while (tokens.peek(TokenKind.DOT)) {
+			if (!tokens.isNextAdjacent()) {
 				tokens.raiseException(tokens.peek().startPos,
-						DSLMessage.ONLY_A_TAP_ON_A_STREAM_OR_TASK_CAN_BE_INDEXED);
+						DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
 			}
-			else {
+			tokens.next(); // skip dot
+			if (!tokens.isNextAdjacent()) {
 				tokens.raiseException(tokens.peek().startPos,
-						DSLMessage.CHANNEL_INDEXING_NOT_ALLOWED);
+						DSLMessage.NO_WHITESPACE_IN_CHANNEL_DEFINITION);
 			}
-		}
-		// Verify the structure:
-		ChannelType channelType = null;
-		if (firstToken.data.equalsIgnoreCase("tap")) {
-			// tap:stream:XXX.YYY
-			// tap:job:XXX
-			// tap:queue:XXX
-			// tap:topic:XXX
-			if (channelScopeComponents.size() < 3) {
-				tokens.raiseException(firstToken.startPos,
-						DSLMessage.TAP_NEEDS_THREE_COMPONENTS);
-			}
-			Token tappingToken = channelScopeComponents.get(1);
-			String tapping = tappingToken.data.toLowerCase();
-			channelScopeComponents.remove(0); // remove 'tap'
-			switch (tapping) {
-				case "stream":
-					channelType = ChannelType.TAP_STREAM;
-					break;
-				case "job":
-					channelType = ChannelType.TAP_JOB;
-					break;
-				case "queue":
-					channelType = ChannelType.TAP_QUEUE;
-					break;
-				case "topic":
-					channelType = ChannelType.TAP_TOPIC;
-					break;
-				default:
-					tokens.raiseException(tappingToken.startPos,
-							DSLMessage.NOT_ALLOWED_TO_TAP_THAT, tappingToken.data);
-					break;
-			}
-		}
-		else {
-			// queue:XXX
-			// topic:XXX
-			if (firstToken.data.equalsIgnoreCase("queue")) {
-				channelType = ChannelType.QUEUE;
-			}
-			else if (firstToken.data.equalsIgnoreCase("topic")) {
-				channelType = ChannelType.TOPIC;
-			}
-			if (channelScopeComponents.size() >= 3) {
-				channelScopeComponents.remove(0);
-			}
+			channelReferenceComponents.add(tokens.eat(TokenKind.IDENTIFIER));
 		}
 		int endPos = channelScopeComponents.get(channelScopeComponents.size() - 1).endPos;
 		if (!channelReferenceComponents.isEmpty()) {
 			endPos = channelReferenceComponents.get(channelReferenceComponents.size() - 1).endPos;
 		}
-		return new ChannelNode(channelType, firstToken.startPos, endPos,
+		return new ChannelNode(firstToken.startPos, endPos,
 				tokenListToStringList(channelScopeComponents),
 				tokenListToStringList(channelReferenceComponents));
 	}
