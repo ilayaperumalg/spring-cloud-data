@@ -43,11 +43,11 @@ $ java -jar spring-cloud-dataflow-server-local-1.0.0.BUILD-SNAPSHOT.jar
 $ java -jar spring-cloud-dataflow-shell-1.0.0.BUILD-SNAPSHOT.jar
 ```
 
-If the srver and shell are not running on the same host, point the shell to the Data Flow server
+If the Data Flow server and shell are not running on the same host, point the shell to the Data Flow server
 
 ```
-server-unknown:>dataflow config server http://s-c-dataflow-admin.cfapps.io
-Successfully targeted http://s-c-dataflow-admin.cfapps.io
+server-unknown:>dataflow config server http://dataflow-server.cfapps.io
+Successfully targeted http://dataflow-server.cfapps.io
 dataflow:>
 ```
 

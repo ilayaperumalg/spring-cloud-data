@@ -37,14 +37,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponents;
 
 /**
- * Controller for the root resource of the server.
+ * Controller for the root resource of the Data Flow server.
  *
  * @author Patrick Peralta
  * @author Ilayaperumal Gopinathan
  * @author Glenn Renfro
  */
 @RestController
-public class ServerController {
+public class RootController {
 
 	/**
 	 * Contains links pointing to controllers backing an entity type
@@ -58,7 +58,7 @@ public class ServerController {
 	 * @param entityLinks holder of links to controllers and their associated entity types
 	 */
 	@Autowired
-	public ServerController(EntityLinks entityLinks) {
+	public RootController(EntityLinks entityLinks) {
 		this.entityLinks = entityLinks;
 	}
 

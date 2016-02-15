@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.cloud.dataflow.server.local.LocalDataFlowServer;
-import org.springframework.cloud.dataflow.server.config.ServerConfiguration;
+import org.springframework.cloud.dataflow.server.config.DataFlowServerConfiguration;
 import org.springframework.cloud.dataflow.artifact.registry.ArtifactRegistry;
 import org.springframework.cloud.dataflow.artifact.registry.InMemoryArtifactRegistry;
 import org.springframework.cloud.dataflow.shell.command.StreamCommandTemplate;
@@ -111,7 +111,7 @@ public abstract class AbstractShellIntegrationTest {
 			}
 
 			SpringApplication application = new SpringApplicationBuilder(LocalDataFlowServer.class,
-					ServerConfiguration.class, TestConfig.class).build();
+					DataFlowServerConfiguration.class, TestConfig.class).build();
 			applicationContext = application.run(
 					String.format("--server.port=%s", serverPort), "--security.basic.enabled=false",
 					"--spring.main.show_banner=false", "--spring.cloud.config.enabled=false",

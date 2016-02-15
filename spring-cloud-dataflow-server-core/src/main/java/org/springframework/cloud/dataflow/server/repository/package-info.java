@@ -1,4 +1,4 @@
 /**
- * Spring Cloud Data Flow Admin Repositories.
+ * Spring Cloud Data Flow Server Repositories.
  */
 package org.springframework.cloud.dataflow.server.repository;

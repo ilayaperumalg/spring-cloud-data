@@ -28,7 +28,7 @@ import org.springframework.util.StringUtils;
  * @author Eric Bottard
  */
 @ConfigurationProperties
-public class ServerProperties {
+public class DataFlowServerProperties {
 
 	/**
 	 * File path to a locally available maven repository, where modules will be downloaded.

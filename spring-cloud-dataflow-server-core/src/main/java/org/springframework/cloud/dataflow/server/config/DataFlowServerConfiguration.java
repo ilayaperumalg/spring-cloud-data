@@ -69,7 +69,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 /**
- * Configuration for the Server application context. This includes support
+ * Configuration for the Data Flow Server application context. This includes support
  * for the REST API framework configuration.
  *
  * @author Mark Fisher
@@ -84,15 +84,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableHypermediaSupport(type = HAL)
 @EnableSpringDataWebSupport
 @Import(CompletionConfiguration.class)
-@EnableConfigurationProperties(ServerProperties.class)
+@EnableConfigurationProperties(DataFlowServerProperties.class)
 @ComponentScan(basePackageClasses = {
 		StreamDefinitionController.class,
 		StreamDefinitionRepository.class
 })
 @EnableAutoConfiguration(exclude = OAuth2AutoConfiguration.class)
-public class ServerConfiguration {
+public class DataFlowServerConfiguration {
 
-	protected static final org.slf4j.Logger logger = LoggerFactory.getLogger(ServerConfiguration.class);
+	protected static final org.slf4j.Logger logger = LoggerFactory.getLogger(DataFlowServerConfiguration.class);
 
 	@Value("${spring.datasource.url:#{null}}")
 	private String dataSourceUrl;

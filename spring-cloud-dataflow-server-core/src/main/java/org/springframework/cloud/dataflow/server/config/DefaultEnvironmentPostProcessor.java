@@ -35,16 +35,16 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 /**
- * Contributes the values from {@code server.yml} if it exists, before any of Spring Boot's normal
+ * Contributes the values from {@code dataflow-server.yml} if it exists, before any of Spring Boot's normal
  * configuration contributions apply. This has the effect of supplying overridable defaults to the
- * various Spring Cloud Dataflow Admin SPI implementations that in turn override the defaults
+ * various Spring Cloud Data Flow Deployer SPI implementations that in turn override the defaults
  * provided by Spring Boot.
  *
  * @author Josh Long
  */
 public class DefaultEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
 
-	private Resource resource = new ClassPathResource("/server.yml");
+	private Resource resource = new ClassPathResource("/dataflow-server.yml");
 
 	@Override
 	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
