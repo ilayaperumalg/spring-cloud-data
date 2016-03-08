@@ -35,6 +35,22 @@ wget http://repo.spring.io/milestone/org/springframework/cloud/spring-cloud-data
 ```
 $ java -jar spring-cloud-dataflow-server-local-1.0.0.BUILD-SNAPSHOT.jar
 ```
+By default, this will start the local deployer that is `out-of-process`. If you want to use `in-process` deployer then
+
+```
+$ java -jar spring-cloud-dataflow-server-local-1.0.0.BUILD-SNAPSHOT.jar --deployer.out-of-process=false
+```
+== Running behind proxy/custom maven settings (remote repositories etc.,)
+
+If you run the Data Flow Server behind the proxy and want to override specific maven configuration properties, you need to specify those as command line arguments
+when starting the Data Flow Server.
+For instance,
+```
+$ java -jar spring-cloud-dataflow-server-local-1.0.0.BUILD-SNAPSHOT.jar --maven.localRepository=mylocal --maven.remoteRepositories=repo1,repo2 --maven.offline=true
+--maven.proxy.protocol=https --maven.proxy.host=host1 --maven.proxy.port=8090 --maven.proxy.non_proxy_hosts='host2|host3' --maven.proxy.auth.username=user1 --maven.proxy.auth.password=passwd
+```
+By default, the protocol is set to use `http`. You can omit the auth properties if the proxy doesn't need username/password.
+By default, the maven `localRepository` is set to use `${user.home}/.m2/repository/` and the remote repositories uses `https://repo.spring.io/libs-snapshot`
 
 [start=3]
 1. launch the shell:
