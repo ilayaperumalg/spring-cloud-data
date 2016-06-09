@@ -76,6 +76,10 @@ public class StreamDeploymentController {
 
 	private static final String DEFAULT_PARTITION_KEY_EXPRESSION = "payload";
 
+	private static final String DEPLOYMENT_TIMEOUT_PROPERTY = "deployment-timeout";
+
+	private static final long DEFAULT_DEPLOYMENT_TIMEOUT = 60000;
+
 	/**
 	 * The repository this controller will use for stream CRUD operations.
 	 */
@@ -210,6 +214,8 @@ public class StreamDeploymentController {
 				appDeploymentProperties.put(AppDeployer.COUNT_PROPERTY_KEY,
 						appDeploymentProperties.get(INSTANCE_COUNT_PROPERTY_KEY));
 			}
+			long deploymentTimeout = appDeploymentProperties.containsKey(DEPLOYMENT_TIMEOUT_PROPERTY) ? Long
+					.valueOf(appDeploymentProperties.get(DEPLOYMENT_TIMEOUT_PROPERTY)) : DEFAULT_DEPLOYMENT_TIMEOUT;
 			boolean upstreamAppSupportsPartition = upstreamAppHasPartitionInfo(stream, currentApp, streamDeploymentProperties);
 			// consumer app partition properties
 			if (upstreamAppSupportsPartition) {
@@ -228,8 +234,26 @@ public class StreamDeploymentController {
 			Resource resource = registration.getResource();
 			AppDeploymentRequest request = currentApp.createDeploymentRequest(resource, appDeploymentProperties);
 			try {
-				String id = this.deployer.deploy(request);
-				this.deploymentIdRepository.save(DeploymentKey.forStreamAppDefinition(currentApp), id);
+				final String id = this.deployer.deploy(request);
+				boolean appDeployed = false;
+				long startTime = System.currentTimeMillis();
+				while (System.currentTimeMillis() - startTime < deploymentTimeout) {
+					AppStatus status = this.deployer.status(id);
+					if (status != null && status.getState().equals(DeploymentState.deployed)) {
+						this.deploymentIdRepository.save(DeploymentKey.forStreamAppDefinition(currentApp), id);
+						appDeployed = true;
+						break;
+
+					}
+				}
+				if (!appDeployed) {
+					loggger.warn(String.format("Deployment Timed out when deploying the app %s", currentApp));
+					// Initiate undeployment of the current app when it wasn't successfully deployed within the
+					// timeout period. This will avoid having successful deployments after timeouts which aren't
+					// tracked by the deployment id repository.
+					loggger.warn(String.format("Undeploying the app %s after timeout", currentApp));
+					deployer.undeploy(id);
+				}
 			}
 			// If the deployer implementation handles the deployment request synchronously, log warning message if
 			// any exception is thrown out of the deployment and proceed to the next deployment.
