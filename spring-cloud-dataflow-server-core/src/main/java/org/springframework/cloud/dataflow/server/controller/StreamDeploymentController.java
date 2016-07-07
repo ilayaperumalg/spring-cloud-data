@@ -238,6 +238,7 @@ public class StreamDeploymentController {
 			Resource resource = registration.getResource();
 			currentApp = qualifyParameters(currentApp, resource);
 
+			appDeploymentProperties = qualifyParameters(appDeploymentProperties, resource);
 			AppDeploymentRequest request = currentApp.createDeploymentRequest(resource, appDeploymentProperties);
 			try {
 				String id = this.deployer.deploy(request);
@@ -249,6 +250,43 @@ public class StreamDeploymentController {
 				loggger.warn(String.format("Exception when deploying the app %s: %s", currentApp, e.getMessage()));
 			}
 		}
+	}
+
+	/*default*/ Map<String, String> qualifyParameters(Map<String, String> appDeploymentProperties, Resource resource) {
+		MultiValueMap<String, ConfigurationMetadataProperty> whiteList = new LinkedMultiValueMap<>();
+		Set<String> allProps = new HashSet<>();
+
+		for (ConfigurationMetadataProperty property : this.metadataResolver.listProperties(resource, false)) {
+			whiteList.add(property.getName(), property);// Use names here
+		}
+		for (ConfigurationMetadataProperty property : this.metadataResolver.listProperties(resource, true)) {
+			allProps.add(property.getId()); // But full ids here
+		}
+
+		Map<String, String> mutatedProps = new HashMap<>(appDeploymentProperties.size());
+		for (Map.Entry<String, String> entry : appDeploymentProperties.entrySet()) {
+			String provided = entry.getKey();
+			if (!allProps.contains(provided)) {
+				List<ConfigurationMetadataProperty> longForms = null;
+				for (String relaxed : new RelaxedNames(provided)) {
+					longForms = whiteList.get(relaxed);
+					if (longForms != null) {
+						break;
+					}
+				}
+				if (longForms != null) {
+					assertNoAmbiguity(longForms);
+					mutatedProps.put(longForms.iterator().next().getId(), entry.getValue());
+				}
+				else {
+					mutatedProps.put(provided, entry.getValue());
+				}
+			}
+			else {
+				mutatedProps.put(provided, entry.getValue());
+			}
+		}
+		return mutatedProps;
 	}
 
 	/**
