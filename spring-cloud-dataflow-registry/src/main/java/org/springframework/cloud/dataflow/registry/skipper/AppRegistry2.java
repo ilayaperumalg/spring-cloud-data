@@ -159,6 +159,7 @@ public class AppRegistry2 {
 	 */
 	public void delete(String name, ApplicationType type, String version) {
 		this.appRegistrationRepository.deleteAppRegistration2ByNameAAndTypeAndVersion(name, type, version);
+		//TODO select new default
 	}
 
 	public List<AppRegistration2> importAll(boolean overwrite, Resource... resources) {

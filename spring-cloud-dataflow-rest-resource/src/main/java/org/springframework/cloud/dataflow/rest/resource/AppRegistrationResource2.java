@@ -17,7 +17,6 @@
 package org.springframework.cloud.dataflow.rest.resource;
 
 import org.springframework.hateoas.PagedResources;
-import org.springframework.hateoas.ResourceSupport;
 
 /**
  * Rest resource for an app registration.
