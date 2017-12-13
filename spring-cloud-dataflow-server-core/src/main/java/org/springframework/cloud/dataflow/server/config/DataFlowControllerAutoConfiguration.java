@@ -92,6 +92,7 @@ import org.springframework.hateoas.EntityLinks;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -110,7 +111,8 @@ import org.springframework.web.client.RestTemplate;
 @EnableConfigurationProperties({ FeaturesProperties.class, VersionInfoProperties.class, MetricsProperties.class })
 @ConditionalOnProperty(prefix = "dataflow.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCircuitBreaker
-@EnableJpaRepositories
+@EnableJpaRepositories(basePackages = "org.springframework.cloud.dataflow.registry.skipper")
+@EnableTransactionManagement
 public class DataFlowControllerAutoConfiguration {
 
 	private static Log logger = LogFactory.getLog(DataFlowControllerAutoConfiguration.class);
@@ -121,13 +123,13 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = true)
+	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED, matchIfMissing = true)
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry(uriRegistry, resourceLoader);
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = false)
+	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 	public AppRegistry2 appRegistry2(AppRegistrationRepository appRegistrationRepository,
 			DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry2(appRegistrationRepository, resourceLoader);
@@ -310,14 +312,14 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = true)
+	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED, matchIfMissing = true)
 	public AppRegistryController appRegistryController(AppRegistry appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = false)
+	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 	public AppRegistryController2 appRegistryController2(AppRegistry2 appRegistry,
 														ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController2(appRegistry, metadataResolver, appRegistryFJPFB().getObject());

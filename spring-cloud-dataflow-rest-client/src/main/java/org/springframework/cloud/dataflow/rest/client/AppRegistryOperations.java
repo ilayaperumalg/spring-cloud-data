@@ -59,6 +59,10 @@ public interface AppRegistryOperations {
 	 */
 	DetailedAppRegistrationResource info(String name, ApplicationType type);
 
+	default DetailedAppRegistrationResource info(String name, ApplicationType type, String version) {
+		return info(name, type);
+	}
+
 	/**
 	 * Register an application name and type with its Maven coordinates.
 	 *
@@ -71,6 +75,11 @@ public interface AppRegistryOperations {
 	 */
 	AppRegistrationResource register(String name, ApplicationType type, String uri, String metadataUri, boolean force);
 
+	default AppRegistrationResource register(String name, ApplicationType type, String version, String uri,
+			String metadataUri, boolean force) {
+		return register(name, type, uri, metadataUri, force);
+	}
+
 	/**
 	 * Unregister an application name and type.
 	 *
@@ -78,6 +87,15 @@ public interface AppRegistryOperations {
 	 * @param type application type
 	 */
 	void unregister(String name, ApplicationType type);
+
+	default void unregister(String name, ApplicationType type, String version) {
+		unregister(name, type);
+	}
+
+
+	default void makeDefault(String name, ApplicationType type, String version) {
+		throw new UnsupportedOperationException();
+	}
 
 	/**
 	 * Register all applications listed in a properties file.
@@ -87,6 +105,7 @@ public interface AppRegistryOperations {
 	 * @return the paged list of new app registrations
 	 */
 	PagedResources<AppRegistrationResource> importFromResource(String uri, boolean force);
+
 
 	/**
 	 * Register all applications provided as key/value pairs.

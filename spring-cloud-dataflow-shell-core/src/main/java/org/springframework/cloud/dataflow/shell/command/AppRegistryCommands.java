@@ -41,13 +41,10 @@ import org.springframework.shell.core.CommandMarker;
 import org.springframework.shell.core.annotation.CliAvailabilityIndicator;
 import org.springframework.shell.core.annotation.CliCommand;
 import org.springframework.shell.core.annotation.CliOption;
-import org.springframework.shell.table.AbsoluteWidthSizeConstraints;
-import org.springframework.shell.table.CellMatchers;
-import org.springframework.shell.table.TableBuilder;
-import org.springframework.shell.table.TableModel;
-import org.springframework.shell.table.TableModelBuilder;
+import org.springframework.shell.table.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Commands for working with the application registry. Allows retrieval of information
@@ -62,6 +59,7 @@ import org.springframework.util.Assert;
  * @author Mark Fisher
  * @author Thomas Risberg
  * @author Gunnar Hillert
+ * @author Christian Tzolov
  */
 @Component
 public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
@@ -75,6 +73,8 @@ public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
 	private static final String REGISTER_APPLICATION = "app register";
 
 	private static final String IMPORT_APPLICATIONS = "app import";
+
+	private static final String DEFAULT_APPLICATION = "app default";
 
 	private DataFlowShell dataFlowShell;
 
@@ -96,7 +96,8 @@ public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
 		return dataFlowShell.hasAccess(RoleType.VIEW, OpsType.APP_REGISTRY);
 	}
 
-	@CliAvailabilityIndicator({ UNREGISTER_APPLICATION, REGISTER_APPLICATION, IMPORT_APPLICATIONS })
+	@CliAvailabilityIndicator({ UNREGISTER_APPLICATION, REGISTER_APPLICATION, IMPORT_APPLICATIONS,
+			DEFAULT_APPLICATION })
 	public boolean availableWithCreateRole() {
 		return dataFlowShell.hasAccess(RoleType.CREATE, OpsType.APP_REGISTRY);
 	}
@@ -162,9 +163,10 @@ public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
 			@CliOption(mandatory = true, key = { "",
 					"name" }, help = "name of the application to unregister") String name,
 			@CliOption(mandatory = true, key = {
-					"type" }, help = "type of the application to unregister") ApplicationType type) {
+					"type" }, help = "type of the application to unregister") ApplicationType type,
+			@CliOption(key = { "version" }, help = "the version for the registered application") String version) {
 
-		appRegistryOperations().unregister(name, type);
+		appRegistryOperations().unregister(name, type, version);
 		return String.format(("Successfully unregistered application '%s' with type %s"), name, type);
 	}
 
@@ -178,7 +180,14 @@ public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
 		int max = 0;
 		for (AppRegistrationResource appRegistration : appRegistrations) {
 			List<String> column = mappings.get(appRegistration.getType());
-			column.add(appRegistration.getName());
+			String value = appRegistration.getName();
+			if (StringUtils.hasText(appRegistration.getVersion()) && !"empty".equals(appRegistration.getVersion())) {
+				value = value + "-" + appRegistration.getVersion();
+				if (appRegistration.isDefault()) {
+					value = String.format("[%s]", value);
+				}
+			}
+			column.add(value);
 			max = Math.max(max, column.size());
 		}
 		if (max == 0) {
@@ -251,9 +260,21 @@ public class AppRegistryCommands implements CommandMarker, ResourceLoaderAware {
 		}
 	}
 
+	@CliCommand(value = DEFAULT_APPLICATION, help = "Change the default application version")
+	public String defaultApplicaiton(
+			@CliOption(mandatory = true, key = { "",
+					"id" }, help = "id of the application to query in the form of 'type:name'") QualifiedApplicationName application,
+			@CliOption(mandatory = true, key = {
+					"version" }, help = "the new default application version") String version) {
+
+		appRegistryOperations().makeDefault(application.name, application.type, version);
+
+		return String.format("New default Application %s:%s:%s", application.type, application.name, version);
+	}
+
 	/**
-	 * Escapes some special values so that they don't disturb console rendering and are
-	 * easier to read.
+	 * Escapes some special values so that they don't disturb console rendering and are easier
+	 * to read.
 	 */
 	private String prettyPrintDefaultValue(ConfigurationMetadataProperty o) {
 		if (o.getDefaultValue() == null) {

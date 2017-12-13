@@ -33,7 +33,6 @@ import org.springframework.cloud.dataflow.registry.skipper.AppRegistration2;
 import org.springframework.cloud.dataflow.registry.skipper.AppRegistry2;
 import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException;
 import org.springframework.cloud.dataflow.rest.resource.AppRegistrationResource;
-import org.springframework.cloud.dataflow.rest.resource.AppRegistrationResource2;
 import org.springframework.cloud.dataflow.rest.resource.DetailedAppRegistrationResource;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.core.io.ByteArrayResource;
@@ -98,7 +97,7 @@ public class AppRegistryController2 implements ResourceLoaderAware {
 	 */
 	@RequestMapping(method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
-	public PagedResources<? extends AppRegistrationResource2> list(
+	public PagedResources<? extends AppRegistrationResource> list(
 			Pageable pageable,
 			PagedResourcesAssembler<AppRegistration2> pagedResourcesAssembler,
 			@RequestParam(value = "type", required = false) ApplicationType type,
@@ -263,7 +262,7 @@ public class AppRegistryController2 implements ResourceLoaderAware {
 	 */
 	@RequestMapping(method = RequestMethod.POST)
 	@ResponseStatus(HttpStatus.CREATED)
-	public PagedResources<? extends AppRegistrationResource2> registerAll(
+	public PagedResources<? extends AppRegistrationResource> registerAll(
 			Pageable pageable,
 			PagedResourcesAssembler<AppRegistration2> pagedResourcesAssembler,
 			@RequestParam(value = "uri", required = false) String uri,
@@ -310,23 +309,22 @@ public class AppRegistryController2 implements ResourceLoaderAware {
 		this.resourceLoader = resourceLoader;
 	}
 
-	class Assembler extends ResourceAssemblerSupport<AppRegistration2, AppRegistrationResource2> {
+	class Assembler extends ResourceAssemblerSupport<AppRegistration2, AppRegistrationResource> {
 
 		public Assembler() {
-			super(AppRegistryController2.class, AppRegistrationResource2.class);
+			super(AppRegistryController2.class, AppRegistrationResource.class);
 		}
 
 		@Override
-		public AppRegistrationResource2 toResource(AppRegistration2 registration) {
+		public AppRegistrationResource toResource(AppRegistration2 registration) {
 			return createResourceWithId(String.format("%s/%s/%s", registration.getType(), registration.getName(),
 					registration.getVersion()), registration);
 		}
 
 		@Override
-		protected AppRegistrationResource2 instantiateResource(AppRegistration2 registration) {
-			return new AppRegistrationResource2(registration.getName(), registration.getType().name(),
-					registration.getVersion(), registration.isDefault(),
-					registration.getUri().toString());
+		protected AppRegistrationResource instantiateResource(AppRegistration2 registration) {
+			return new AppRegistrationResource(registration.getName(), registration.getType().name(),
+					registration.getVersion(), registration.getUri().toString(), registration.isDefault());
 		}
 	}
 }
