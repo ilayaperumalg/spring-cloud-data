@@ -51,27 +51,12 @@ import org.springframework.cloud.dataflow.completion.TaskCompletionProvider;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.registry.AppRegistry;
 import org.springframework.cloud.dataflow.registry.RdbmsUriRegistry;
+import org.springframework.cloud.dataflow.registry.skipper.AppRegistrationRepository;
+import org.springframework.cloud.dataflow.registry.skipper.AppRegistry2;
 import org.springframework.cloud.dataflow.server.config.apps.CommonApplicationProperties;
 import org.springframework.cloud.dataflow.server.config.features.FeaturesProperties;
-import org.springframework.cloud.dataflow.server.controller.AboutController;
-import org.springframework.cloud.dataflow.server.controller.AppRegistryController;
-import org.springframework.cloud.dataflow.server.controller.CompletionController;
-import org.springframework.cloud.dataflow.server.controller.FeaturesController;
-import org.springframework.cloud.dataflow.server.controller.JobExecutionController;
-import org.springframework.cloud.dataflow.server.controller.JobInstanceController;
-import org.springframework.cloud.dataflow.server.controller.JobStepExecutionController;
-import org.springframework.cloud.dataflow.server.controller.JobStepExecutionProgressController;
-import org.springframework.cloud.dataflow.server.controller.MetricsController;
-import org.springframework.cloud.dataflow.server.controller.RestControllerAdvice;
-import org.springframework.cloud.dataflow.server.controller.RootController;
-import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController;
+import org.springframework.cloud.dataflow.server.controller.*;
 import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController.AppInstanceController;
-import org.springframework.cloud.dataflow.server.controller.StreamDefinitionController;
-import org.springframework.cloud.dataflow.server.controller.StreamDeploymentController;
-import org.springframework.cloud.dataflow.server.controller.TaskDefinitionController;
-import org.springframework.cloud.dataflow.server.controller.TaskExecutionController;
-import org.springframework.cloud.dataflow.server.controller.ToolsController;
-import org.springframework.cloud.dataflow.server.controller.UiController;
 import org.springframework.cloud.dataflow.server.controller.security.LoginController;
 import org.springframework.cloud.dataflow.server.controller.security.SecurityController;
 import org.springframework.cloud.dataflow.server.controller.support.MetricStore;
@@ -102,6 +87,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ResourceLoader;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.hateoas.EntityLinks;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -124,6 +110,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableConfigurationProperties({ FeaturesProperties.class, VersionInfoProperties.class, MetricsProperties.class })
 @ConditionalOnProperty(prefix = "dataflow.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCircuitBreaker
+@EnableJpaRepositories
 public class DataFlowControllerAutoConfiguration {
 
 	private static Log logger = LogFactory.getLog(DataFlowControllerAutoConfiguration.class);
@@ -134,8 +121,16 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = true)
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry(uriRegistry, resourceLoader);
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = false)
+	public AppRegistry2 appRegistry2(AppRegistrationRepository appRegistrationRepository,
+			DelegatingResourceLoader resourceLoader) {
+		return new AppRegistry2(appRegistrationRepository, resourceLoader);
 	}
 
 	@Bean
@@ -315,10 +310,19 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = true)
 	public AppRegistryController appRegistryController(AppRegistry appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
 	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = "foo", name = "bar", matchIfMissing = false)
+	public AppRegistryController2 appRegistryController2(AppRegistry2 appRegistry,
+														ApplicationConfigurationMetadataResolver metadataResolver) {
+		return new AppRegistryController2(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
+	}
+
 
 	@Bean
 	public SecurityController securityController(SecurityStateBean securityStateBean) {
