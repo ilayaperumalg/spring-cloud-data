@@ -315,7 +315,7 @@ public class VersionedAppRegistryController {
 		@Override
 		protected AppRegistrationResource instantiateResource(AppRegistration registration) {
 			return new AppRegistrationResource(registration.getName(), registration.getType().name(),
-					registration.getVersion(), registration.getUri().toString(), registration.isDefault());
+					registration.getVersion(), registration.getUri().toString(), registration.isDefaultVersion());
 		}
 	}
 }

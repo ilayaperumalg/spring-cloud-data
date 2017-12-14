@@ -101,29 +101,29 @@ public class AppRegistryService implements AppRegistryCommon {
 
 	@Override
 	public AppRegistration find(String name, ApplicationType type, String version) {
-		return this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(name, type, version);
+		return this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndVersion(name, type, version);
 	}
 
 	public AppRegistration getDefaultApp(String name, ApplicationType type) {
-		return this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndDefaultIsTrue(name, type);
+		return this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
 	}
 
 	@Transactional
 	public void setDefaultApp(String name, ApplicationType type, String version) {
 		AppRegistration newDefault = this.appRegistrationRepository
-				.findAppRegistration2ByNameAndTypeAndVersion(name,
+				.findAppRegistrationByNameAndTypeAndVersion(name,
 						type, version);
 
 		if (newDefault == null) {
 			throw new NoSuchAppRegistrationException2(name, type, version);
 		}
 
-		newDefault.setDefault(true);
+		newDefault.setDefaultVersion(true);
 
 		AppRegistration oldDefault = this.appRegistrationRepository
-				.findAppRegistration2ByNameAndTypeAndDefaultIsTrue(name, type);
+				.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
 		if (oldDefault != null) {
-			oldDefault.setDefault(false);
+			oldDefault.setDefaultVersion(false);
 			this.appRegistrationRepository.save(oldDefault);
 		}
 		this.appRegistrationRepository.save(newDefault);
@@ -172,7 +172,7 @@ public class AppRegistryService implements AppRegistryCommon {
 	 * @param version Version of the AppRegistration to delete
 	 */
 	public void delete(String name, ApplicationType type, String version) {
-		this.appRegistrationRepository.deleteAppRegistration2ByNameAAndTypeAndVersion(name, type, version);
+		this.appRegistrationRepository.deleteAppRegistrationByNameAAndTypeAndVersion(name, type, version);
 		// TODO select new default
 	}
 
@@ -188,7 +188,7 @@ public class AppRegistryService implements AppRegistryCommon {
 	}
 
 	private boolean isOverwrite(AppRegistration app, boolean overwrite) {
-		return overwrite || this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(app.getName(),
+		return overwrite || this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndVersion(app.getName(),
 				app.getType(), app.getVersion()) == null;
 	}
 

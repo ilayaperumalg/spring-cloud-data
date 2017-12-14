@@ -11,11 +11,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface AppRegistrationRepository extends JpaRepository<AppRegistration, String> {
 
-	AppRegistration findAppRegistration2ByNameAndTypeAndVersion(String name, ApplicationType type, String version);
+	AppRegistration findAppRegistrationByNameAndTypeAndVersion(String name, ApplicationType type, String version);
+	
+	AppRegistration findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(String name, ApplicationType type);
 
-	AppRegistration findAppRegistration2ByNameAndTypeAndDefaultIsTrue(String name, ApplicationType type);
-
-	void deleteAppRegistration2ByNameAAndTypeAndVersion(String name, ApplicationType type, String version);
+	void deleteAppRegistrationByNameAAndTypeAndVersion(String name, ApplicationType type, String version);
 
 	@Override
 	<S extends AppRegistration> S save(S s);

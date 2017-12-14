@@ -65,7 +65,7 @@ public class AppRegistration implements Comparable<AppRegistration> {
 	 * Is current default app version for a given (name, type) combination. Only one default
 	 * per (name, type) pair is allowed
 	 */
-	private boolean isDefault;
+	private boolean defaultVersion;
 
 	public AppRegistration() {
 	}
@@ -166,12 +166,12 @@ public class AppRegistration implements Comparable<AppRegistration> {
 		this.metadataUri = metadataUri;
 	}
 
-	public boolean isDefault() {
-		return isDefault;
+	public boolean isDefaultVersion() {
+		return defaultVersion;
 	}
 
-	public void setDefault(boolean aDefault) {
-		isDefault = aDefault;
+	public void setDefaultVersion(boolean defaultVersion) {
+		this.defaultVersion = defaultVersion;
 	}
 
 	@Override
