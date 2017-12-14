@@ -31,6 +31,7 @@ import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConf
 import org.springframework.cloud.dataflow.core.ApplicationType;
 import org.springframework.cloud.dataflow.registry.AppRegistration;
 import org.springframework.cloud.dataflow.registry.skipper.AppRegistryService;
+import org.springframework.cloud.dataflow.registry.skipper.DefaultAppRegistryService;
 import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException;
 import org.springframework.cloud.dataflow.rest.resource.AppRegistrationResource;
 import org.springframework.cloud.dataflow.rest.resource.DetailedAppRegistrationResource;
@@ -49,7 +50,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * Handles all {@link AppRegistryService} related interactions.
+ * Handles all {@link DefaultAppRegistryService} related interactions.
  *
  * @author Glenn Renfro
  * @author Mark Fisher
@@ -265,7 +266,7 @@ public class VersionedAppRegistryController {
 			@RequestParam(value = "force", defaultValue = "false") boolean force) throws IOException {
 		List<AppRegistration> registrations = new ArrayList<>();
 		if (StringUtils.hasText(uri)) {
-			registrations.addAll(appRegistryService.importAll(force, 
+			registrations.addAll(appRegistryService.importAll(force,
 					this.appRegistryService.getResourceLoader().getResource(uri)));
 		}
 		else if (!CollectionUtils.isEmpty(apps)) {

@@ -1,9 +1,9 @@
 package org.springframework.cloud.dataflow.registry;
 
+import java.util.List;
+
 import org.springframework.cloud.dataflow.core.ApplicationType;
 import org.springframework.core.io.Resource;
-
-import java.util.List;
 
 /**
  * @author Christian Tzolov

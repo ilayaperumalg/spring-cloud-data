@@ -19,9 +19,9 @@ package org.springframework.cloud.dataflow.registry;
 import java.net.URI;
 
 import javax.persistence.Entity;
-import javax.persistence.Id;
 
 import org.springframework.cloud.dataflow.core.ApplicationType;
+import org.springframework.cloud.dataflow.registry.domain.AbstractEntity;
 import org.springframework.util.Assert;
 
 /**
@@ -32,12 +32,11 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 @Entity
-public class AppRegistration implements Comparable<AppRegistration> {
+public class AppRegistration extends AbstractEntity implements Comparable<AppRegistration> {
 
 	/**
 	 * App name.
 	 */
-	@Id
 	private String name;
 
 	/**
@@ -65,7 +64,7 @@ public class AppRegistration implements Comparable<AppRegistration> {
 	 * Is current default app version for a given (name, type) combination. Only one default
 	 * per (name, type) pair is allowed
 	 */
-	private boolean defaultVersion;
+	private Boolean defaultVersion;
 
 	public AppRegistration() {
 	}
@@ -166,11 +165,11 @@ public class AppRegistration implements Comparable<AppRegistration> {
 		this.metadataUri = metadataUri;
 	}
 
-	public boolean isDefaultVersion() {
+	public Boolean isDefaultVersion() {
 		return defaultVersion;
 	}
 
-	public void setDefaultVersion(boolean defaultVersion) {
+	public void setDefaultVersion(Boolean defaultVersion) {
 		this.defaultVersion = defaultVersion;
 	}
 

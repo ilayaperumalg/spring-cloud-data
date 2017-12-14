@@ -116,8 +116,7 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	//s@ConditionalOnMissingBean(AppRegistryService.class)
-	//@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
+	//s@ConditionalOnMissingBean(DefaultAppRegistryService.class)
 	@ConditionalOnExpression("#{'${" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.SKIPPER_ENABLED
 			+ ":false}'.equalsIgnoreCase('false')}")
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
@@ -226,7 +225,7 @@ public class DataFlowControllerAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(TaskDefinitionRepository.class)
 	public TaskDefinitionController taskDefinitionController(TaskDefinitionRepository repository,
-			DeploymentIdRepository deploymentIdRepository, TaskLauncher taskLauncher, AppRegistry appRegistry,
+			DeploymentIdRepository deploymentIdRepository, TaskLauncher taskLauncher, AppRegistryCommon appRegistry,
 			TaskService taskService) {
 		return new TaskDefinitionController(repository, deploymentIdRepository, taskLauncher, appRegistry,
 				taskService);

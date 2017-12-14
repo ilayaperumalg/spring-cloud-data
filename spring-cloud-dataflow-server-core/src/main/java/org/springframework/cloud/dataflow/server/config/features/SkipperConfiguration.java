@@ -26,6 +26,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.registry.skipper.AppRegistrationRepository;
 import org.springframework.cloud.dataflow.registry.skipper.AppRegistryService;
+import org.springframework.cloud.dataflow.registry.skipper.DefaultAppRegistryService;
 import org.springframework.cloud.dataflow.server.controller.VersionedAppRegistryController;
 import org.springframework.cloud.dataflow.server.repository.StreamDefinitionRepository;
 import org.springframework.cloud.dataflow.server.repository.StreamDeploymentRepository;
@@ -58,7 +59,7 @@ public class SkipperConfiguration {
 	@Bean
 	public AppRegistryService appRegistry2(AppRegistrationRepository appRegistrationRepository,
 			DelegatingResourceLoader resourceLoader) {
-		return new AppRegistryService(appRegistrationRepository, resourceLoader);
+		return new DefaultAppRegistryService(appRegistrationRepository, resourceLoader);
 	}
 
 	@Bean

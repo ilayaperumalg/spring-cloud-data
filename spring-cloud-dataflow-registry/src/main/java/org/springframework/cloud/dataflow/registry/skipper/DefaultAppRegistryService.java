@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.springframework.cloud.dataflow.registry;
+package org.springframework.cloud.dataflow.registry.skipper;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,8 +30,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.dataflow.core.ApplicationType;
-import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException;
-import org.springframework.cloud.deployer.resource.registry.UriRegistry;
+import org.springframework.cloud.dataflow.registry.AppRegistration;
+import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException2;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
@@ -37,12 +39,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * Convenience wrapper for the {@link UriRegistry} that operates on higher level
- * {@link AppRegistration} objects and supports on-demand loading of {@link Resource}s.
+ * Convenience wrapper for the {@link } that operates on higher level
+ * {@link DefaultAppRegistryService} objects and supports on-demand loading of {@link Resource}s.
  * <p>
  * <p>
  * Stores AppRegistration with up to two keys:
@@ -58,53 +61,81 @@ import org.springframework.util.StringUtils;
  * @author Eric Bottard
  * @author Ilayaperumal Gopinathan
  * @author Oleg Zhurakousky
+ * @author Christian Tzolov
  */
-public class AppRegistry implements AppRegistryCommon {
+@Transactional
+public class DefaultAppRegistryService implements AppRegistryService {
 
-	private static final Logger logger = LoggerFactory.getLogger(AppRegistry.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultAppRegistryService.class);
 
 	private static final String METADATA_KEY_SUFFIX = "metadata";
 
-	private final UriRegistry uriRegistry;
+	private final AppRegistrationRepository appRegistrationRepository;
 
 	private final ResourceLoader resourceLoader;
 
-	private static final Function<Map.Entry<Object, Object>, AbstractMap.SimpleImmutableEntry<String, URI>> toStringAndUriFUNC = kv -> {
-		try {
-			return new AbstractMap.SimpleImmutableEntry<>((String) kv.getKey(), new URI((String) kv.getValue()));
-		}
-		catch (URISyntaxException e) {
-			throw new IllegalArgumentException(e);
-		}
-	};
-
-	public AppRegistry(UriRegistry uriRegistry, ResourceLoader resourceLoader) {
-		Assert.notNull(uriRegistry, "'uriRegistry' must not be null");
+	public DefaultAppRegistryService(AppRegistrationRepository appRegistrationRepository, ResourceLoader resourceLoader) {
+		Assert.notNull(appRegistrationRepository, "'appRegistrationRepository' must not be null");
 		Assert.notNull(resourceLoader, "'resourceLoader' must not be null");
-		this.uriRegistry = uriRegistry;
+		this.appRegistrationRepository = appRegistrationRepository;
 		this.resourceLoader = resourceLoader;
 	}
 
+	public ResourceLoader getResourceLoader() {
+		return this.resourceLoader;
+	}
+
+	public Resource getAppMetadataResource(AppRegistration appRegistration) {
+		return appRegistration.getMetadataUri() != null ? this.resourceLoader.getResource(
+				appRegistration.getMetadataUri().toString()) : null;
+	}
+
+	public Resource getAppResource(AppRegistration appRegistration) {
+		return this.resourceLoader.getResource(appRegistration.getUri().toString());
+	}
+
+	@Override
 	public AppRegistration find(String name, ApplicationType type) {
-		try {
-			String key = key(name, type);
-			URI uri = this.uriRegistry.find(key);
-			URI metadataUri = metadataUriFromRegistry(key);
-			return new AppRegistration(name, type, uri, metadataUri);
+		return this.getDefaultApp(name, type);
+	}
+
+	@Override
+	public AppRegistration find(String name, ApplicationType type, String version) {
+		return this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndVersion(name, type, version);
+	}
+
+	@Override
+	public AppRegistration getDefaultApp(String name, ApplicationType type) {
+		return this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
+	}
+
+	@Override
+	public void setDefaultApp(String name, ApplicationType type, String version) {
+		AppRegistration newDefault = this.appRegistrationRepository
+				.findAppRegistrationByNameAndTypeAndVersion(name,
+						type, version);
+
+		if (newDefault == null) {
+			throw new NoSuchAppRegistrationException2(name, type, version);
 		}
-		catch (IllegalArgumentException e) {
-			return null; // ignore and treat as not found
+
+		newDefault.setDefaultVersion(true);
+
+		AppRegistration oldDefault = this.appRegistrationRepository
+				.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
+		if (oldDefault != null) {
+			oldDefault.setDefaultVersion(false);
+			this.appRegistrationRepository.save(oldDefault);
 		}
+		this.appRegistrationRepository.save(newDefault);
 	}
 
 	@Override
 	public List<AppRegistration> findAll() {
-		return this.uriRegistry.findAll().entrySet().stream()
-				.flatMap(kv -> toValidAppRegistration(kv, metadataUriFromRegistry(kv.getKey())))
-				.sorted((a, b) -> a.compareTo(b))
-				.collect(Collectors.toList());
+		return this.appRegistrationRepository.findAll();
 	}
 
+	@Override
 	public Page<AppRegistration> findAll(Pageable pageable) {
 		List<AppRegistration> appRegistrations = this.findAll();
 		long to = Math.min(appRegistrations.size(), pageable.getOffset() + pageable.getPageSize());
@@ -130,24 +161,37 @@ public class AppRegistry implements AppRegistryCommon {
 				appRegistrations.size());
 	}
 
-	public AppRegistration save(String name, ApplicationType type, URI uri, URI metadataUri) {
-		this.uriRegistry.register(key(name, type), uri);
-		if (metadataUri != null) {
-			this.uriRegistry.register(metadataKey(name, type), metadataUri);
-		}
-		return new AppRegistration(name, type, uri, metadataUri);
+	public AppRegistration save(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
+		return this.appRegistrationRepository.save(new AppRegistration(name, type, version, uri, metadataUri));
+	}
+
+	/**
+	 * Deletes an {@link AppRegistration}. If the {@link AppRegistration} does not exist, a
+	 * {@link NoSuchAppRegistrationException2} will be thrown.
+	 *
+	 * @param name Name of the AppRegistration to delete
+	 * @param type Type of the AppRegistration to delete
+	 * @param version Version of the AppRegistration to delete
+	 */
+	public void delete(String name, ApplicationType type, String version) {
+		this.appRegistrationRepository.deleteAppRegistrationByNameAndTypeAndVersion(name, type, version);
+		// TODO select new default
 	}
 
 	public List<AppRegistration> importAll(boolean overwrite, Resource... resources) {
-		Set<String> registeredKeys = overwrite ? Collections.emptySet() : uriRegistry.findAll().keySet();
 		return Stream.of(resources)
 				.map(this::loadProperties)
 				.flatMap(prop -> prop.entrySet().stream()
 						.map(toStringAndUriFUNC)
 						.flatMap(kv -> toValidAppRegistration(kv, metadataUriFromProperties(kv.getKey(), prop)))
-						.filter(ar -> !registeredKeys.contains(key(ar.getName(), ar.getType())))
-						.map(ar -> save(ar.getName(), ar.getType(), ar.getUri(), ar.getMetadataUri())))
+						.filter(a -> isOverwrite(a, overwrite))
+						.map(ar -> save(ar.getName(), ar.getType(), ar.getVersion(), ar.getUri(), ar.getMetadataUri())))
 				.collect(Collectors.toList());
+	}
+
+	private boolean isOverwrite(AppRegistration app, boolean overwrite) {
+		return overwrite || this.appRegistrationRepository.findAppRegistrationByNameAndTypeAndVersion(app.getName(),
+				app.getType(), app.getVersion()) == null;
 	}
 
 	private Properties loadProperties(Resource resource) {
@@ -159,22 +203,14 @@ public class AppRegistry implements AppRegistryCommon {
 		}
 	}
 
-	/**
-	 * Deletes an {@link AppRegistration}. If the {@link AppRegistration} does not exist, a
-	 * {@link NoSuchAppRegistrationException} will be thrown.
-	 *
-	 * @param name Name of the AppRegistration to delete
-	 * @param type Type of the AppRegistration to delete
-	 */
-	public void delete(String name, ApplicationType type) {
-		if (this.find(name, type) != null) {
-			this.uriRegistry.unregister(key(name, type));
-			this.uriRegistry.unregister(metadataKey(name, type));
+	private static final Function<Entry<Object, Object>, AbstractMap.SimpleImmutableEntry<String, URI>> toStringAndUriFUNC = kv -> {
+		try {
+			return new AbstractMap.SimpleImmutableEntry<>((String) kv.getKey(), new URI((String) kv.getValue()));
 		}
-		else {
-			throw new NoSuchAppRegistrationException(name, type);
+		catch (URISyntaxException e) {
+			throw new IllegalArgumentException(e);
 		}
-	}
+	};
 
 	/**
 	 * Builds a {@link Stream} from key/value mapping.
@@ -195,7 +231,14 @@ public class AppRegistry implements AppRegistryCommon {
 			String name = tokens[1];
 			ApplicationType type = ApplicationType.valueOf(tokens[0]);
 			URI appURI = warnOnMalformedURI(key, kv.getValue());
-			return Stream.of(new AppRegistration(name, type, appURI, metadataURI));
+
+			Resource appResource = resourceLoader.getResource(appURI.toString());
+			// TODO use org.springframework.cloud.dataflow.server.support.ResourceUtils to extract the
+			// version form URI
+			String version = appURI.getSchemeSpecificPart()
+					.substring(appURI.getSchemeSpecificPart().lastIndexOf(":") + 1);
+
+			return Stream.of(new AppRegistration(name, type, version, appURI, metadataURI));
 		}
 		else {
 			Assert.isTrue(tokens.length == 3 && METADATA_KEY_SUFFIX.equals(tokens[2]),
@@ -206,34 +249,13 @@ public class AppRegistry implements AppRegistryCommon {
 	}
 
 	private URI metadataUriFromProperties(String key, Properties properties) {
-		String metadataValue = properties.getProperty(metadataKey(key));
+		String metadataValue = properties.getProperty(key + "." + METADATA_KEY_SUFFIX);
 		try {
 			return metadataValue != null ? warnOnMalformedURI(key, new URI(metadataValue)) : null;
 		}
 		catch (URISyntaxException e) {
 			throw new IllegalArgumentException(e);
 		}
-	}
-
-	private URI metadataUriFromRegistry(String key) {
-		try {
-			return uriRegistry.find(metadataKey(key));
-		}
-		catch (IllegalArgumentException ignored) {
-			return null;
-		}
-	}
-
-	private String key(String name, ApplicationType type) {
-		return String.format("%s.%s", type, name);
-	}
-
-	private String metadataKey(String name, ApplicationType type) {
-		return String.format("%s.%s.%s", type, name, METADATA_KEY_SUFFIX);
-	}
-
-	private String metadataKey(String key) {
-		return key + "." + METADATA_KEY_SUFFIX;
 	}
 
 	private URI warnOnMalformedURI(String key, URI uri) {
@@ -253,20 +275,11 @@ public class AppRegistry implements AppRegistryCommon {
 
 	@Override
 	public boolean appExist(String name, ApplicationType type) {
-		return find(name, type) != null;
+		return getDefaultApp(name, type) != null;
 	}
 
 	@Override
-	public Resource getAppResource(AppRegistration app) {
-		return this.resourceLoader.getResource(app.getUri().toString());
+	public boolean appExist(String name, ApplicationType type, String version) {
+		return find(name, type, version) != null;
 	}
-
-	@Override
-	public Resource getAppMetadataResource(AppRegistration app) {
-		if (app.getMetadataUri() != null) {
-			return this.resourceLoader.getResource(app.getMetadataUri().toString());
-		}
-		return null;
-	}
-
 }

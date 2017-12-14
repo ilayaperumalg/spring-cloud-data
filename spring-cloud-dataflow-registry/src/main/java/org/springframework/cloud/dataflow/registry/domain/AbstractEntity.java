@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 the original author or authors.
+ * Copyright 2012-2017 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.springframework.cloud.dataflow.registry.domain;
 
-package org.springframework.cloud.dataflow.server.job.support;
+import javax.persistence.*;
 
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.StepExecution;
+import org.springframework.hateoas.Identifiable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * Jackson MixIn for {@link StepExecution} serialization. This MixIn excludes the
- * {@link JobExecution} from being serialized. This is due to the fact that it would cause
- * a {@link StackOverflowError} due to a circular reference.
+ * Base class for entity implementations. Uses a {@link Long} id.
  *
+ * @author Oliver Gierke
  * @author Gunnar Hillert
- * @since 1.0
  */
-public abstract class StepExecutionJacksonMixIn {
+@MappedSuperclass
+public class AbstractEntity implements Identifiable<Long> {
 
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	@JsonIgnore
-	abstract JobExecution getJobExecution();
+	private final Long id;
+
+	@Version
+	@JsonIgnore
+	private Long objectVersion;
+
+	protected AbstractEntity() {
+		this.id = null;
+	}
+
+	@Override
+	public Long getId() {
+		return this.id;
+	}
+
+	public Long getObjectVersion() {
+		return objectVersion;
+	}
+
 }
