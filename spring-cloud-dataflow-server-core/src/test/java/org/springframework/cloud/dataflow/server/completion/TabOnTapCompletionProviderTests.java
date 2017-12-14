@@ -128,7 +128,7 @@ public class TabOnTapCompletionProviderTests {
 					String filename = name + "-" + type;
 					File file = new File(ROOT, filename);
 					if (file.exists()) {
-						return new AppRegistration(name, type, file.toURI(), resourceLoader);
+						return new AppRegistration(name, type, file.toURI());
 					}
 					else {
 						return null;
@@ -150,7 +150,7 @@ public class TabOnTapCompletionProviderTests {
 					Assert.isTrue(matcher.matches(), fileName + " did not match expected pattern");
 					String name = matcher.group("name");
 					ApplicationType type = ApplicationType.valueOf(matcher.group("type"));
-					return new AppRegistration(name, type, file.toURI(), resourceLoader);
+					return new AppRegistration(name, type, file.toURI());
 				}
 			};
 		}

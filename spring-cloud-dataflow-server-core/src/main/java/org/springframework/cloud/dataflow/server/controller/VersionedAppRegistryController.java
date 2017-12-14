@@ -20,11 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
@@ -33,8 +29,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.configurationmetadata.ConfigurationMetadataProperty;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.core.ApplicationType;
+import org.springframework.cloud.dataflow.registry.AppRegistration;
 import org.springframework.cloud.dataflow.registry.skipper.AppRegistryService;
-import org.springframework.cloud.dataflow.registry.skipper.VersionedAppRegistration;
 import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException;
 import org.springframework.cloud.dataflow.rest.resource.AppRegistrationResource;
 import org.springframework.cloud.dataflow.rest.resource.DetailedAppRegistrationResource;
@@ -50,12 +46,7 @@ import org.springframework.hateoas.mvc.ResourceAssemblerSupport;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Handles all {@link AppRegistryService} related interactions.
@@ -103,15 +94,15 @@ public class VersionedAppRegistryController {
 	@ResponseStatus(HttpStatus.OK)
 	public PagedResources<? extends AppRegistrationResource> list(
 			Pageable pageable,
-			PagedResourcesAssembler<VersionedAppRegistration> pagedResourcesAssembler,
+			PagedResourcesAssembler<AppRegistration> pagedResourcesAssembler,
 			@RequestParam(value = "type", required = false) ApplicationType type,
 			@RequestParam(required = false) String search) {
-		Page<VersionedAppRegistration> pagedRegistrations;
+		Page<AppRegistration> pagedRegistrations;
 		if (type == null && search == null) {
 			pagedRegistrations = appRegistryService.findAll(pageable);
 		}
 		else {
-			List<VersionedAppRegistration> appRegistrations = appRegistryService.findAll().stream()
+			List<AppRegistration> appRegistrations = appRegistryService.findAll().stream()
 					.filter(ar -> (type != null ? ar.getType() == type : true))
 					.filter(ar -> (StringUtils.hasText(search) ? ar.getName().contains(search) : true))
 					.collect(Collectors.toList());
@@ -154,7 +145,7 @@ public class VersionedAppRegistryController {
 	@ResponseStatus(HttpStatus.OK)
 	public DetailedAppRegistrationResource info(@PathVariable("type") ApplicationType type,
 			@PathVariable("name") String name, @PathVariable("version") String version) {
-		VersionedAppRegistration registration = appRegistryService.find(name, type, version);
+		AppRegistration registration = appRegistryService.find(name, type, version);
 		if (registration == null) {
 			throw new NoSuchAppRegistrationException(name, type); // TODO add version
 		}
@@ -193,12 +184,12 @@ public class VersionedAppRegistryController {
 			@PathVariable("version") String version,
 			@RequestParam("uri") String uri, @RequestParam(name = "metadata-uri", required = false) String metadataUri,
 			@RequestParam(value = "force", defaultValue = "false") boolean force) {
-		VersionedAppRegistration previous = appRegistryService.find(name, type, version);
+		AppRegistration previous = appRegistryService.find(name, type, version);
 		if (!force && previous != null) {
-			throw new AppAlreadyRegisteredException2(previous);
+			throw new AppAlreadyRegisteredException(previous);
 		}
 		try {
-			VersionedAppRegistration registration = appRegistryService.save(name, type, version, new URI(uri),
+			AppRegistration registration = appRegistryService.save(name, type, version, new URI(uri),
 					metadataUri != null ? new URI(metadataUri) : null);
 			prefetchMetadata(Arrays.asList(registration));
 		}
@@ -268,11 +259,11 @@ public class VersionedAppRegistryController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public PagedResources<? extends AppRegistrationResource> registerAll(
 			Pageable pageable,
-			PagedResourcesAssembler<VersionedAppRegistration> pagedResourcesAssembler,
+			PagedResourcesAssembler<AppRegistration> pagedResourcesAssembler,
 			@RequestParam(value = "uri", required = false) String uri,
 			@RequestParam(value = "apps", required = false) Properties apps,
 			@RequestParam(value = "force", defaultValue = "false") boolean force) throws IOException {
-		List<VersionedAppRegistration> registrations = new ArrayList<>();
+		List<AppRegistration> registrations = new ArrayList<>();
 		if (StringUtils.hasText(uri)) {
 			registrations.addAll(appRegistryService.importAll(force, 
 					this.appRegistryService.getResourceLoader().getResource(uri)));
@@ -295,7 +286,7 @@ public class VersionedAppRegistryController {
 	 * explicit metadata artifact. This assumes usage of
 	 * {@link org.springframework.cloud.deployer.resource.support.DelegatingResourceLoader}.
 	 */
-	private void prefetchMetadata(List<VersionedAppRegistration> appRegistrations) {
+	private void prefetchMetadata(List<AppRegistration> appRegistrations) {
 		forkJoinPool.execute(() -> {
 			appRegistrations.stream().filter(r -> r.getMetadataUri() != null).parallel().forEach(r -> {
 				logger.info("Eagerly fetching {}", r.getMetadataUri());
@@ -309,20 +300,20 @@ public class VersionedAppRegistryController {
 		});
 	}
 
-	class Assembler extends ResourceAssemblerSupport<VersionedAppRegistration, AppRegistrationResource> {
+	class Assembler extends ResourceAssemblerSupport<AppRegistration, AppRegistrationResource> {
 
 		public Assembler() {
 			super(VersionedAppRegistryController.class, AppRegistrationResource.class);
 		}
 
 		@Override
-		public AppRegistrationResource toResource(VersionedAppRegistration registration) {
+		public AppRegistrationResource toResource(AppRegistration registration) {
 			return createResourceWithId(String.format("%s/%s/%s", registration.getType(), registration.getName(),
 					registration.getVersion()), registration);
 		}
 
 		@Override
-		protected AppRegistrationResource instantiateResource(VersionedAppRegistration registration) {
+		protected AppRegistrationResource instantiateResource(AppRegistration registration) {
 			return new AppRegistrationResource(registration.getName(), registration.getType().name(),
 					registration.getVersion(), registration.getUri().toString(), registration.isDefault());
 		}

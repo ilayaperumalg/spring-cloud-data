@@ -18,62 +18,79 @@ package org.springframework.cloud.dataflow.registry;
 
 import java.net.URI;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
 import org.springframework.cloud.dataflow.core.ApplicationType;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.Assert;
 
 /**
- * This maps a (name + type) pair to a URI and provides on-demand access to the
- * {@link Resource}.
+ * This maps a (name + type + version) triple to a URI
  *
  * @author Patrick Peralta
  * @author Mark Fisher
+ * @author Christian Tzolov
  */
+@Entity
 public class AppRegistration implements Comparable<AppRegistration> {
 
 	/**
 	 * App name.
 	 */
-	private final String name;
+	@Id
+	private String name;
 
 	/**
 	 * App type.
 	 */
-	private final ApplicationType type;
+	private ApplicationType type;
+
+	/**
+	 * App version.
+	 */
+	private String version;
 
 	/**
 	 * URI for the app resource.
 	 */
-	private final URI uri;
+	private URI uri;
 
 	/**
 	 * URI for the app metadata or {@literal null} if the app itself should be used as
 	 * metadata source.
 	 */
-	private final URI metadataUri;
+	private URI metadataUri;
 
 	/**
-	 * {@link ResourceLoader} to load the Resource for this app.
+	 * Is current default app version for a given (name, type) combination. Only one default
+	 * per (name, type) pair is allowed
 	 */
-	private final ResourceLoader loader;
+	private boolean isDefault;
+
+	public AppRegistration() {
+	}
 
 	/**
-	 * The actual {@link Resource} for this app, loaded on-demand and cached.
-	 */
-	private volatile Resource resource;
-
-	/**
-	 * Construct an {@code AppRegistration} object.
+	 * Construct an {@code AppRegistration} object with empty version and metadata uri
 	 *
 	 * @param name app name
 	 * @param type app type
 	 * @param uri URI for the app resource
-	 * @param loader the {@link ResourceLoader} that loads the {@link Resource} for this
-	 * app
 	 */
-	public AppRegistration(String name, ApplicationType type, URI uri, ResourceLoader loader) {
-		this(name, type, uri, null, loader);
+	public AppRegistration(String name, ApplicationType type, URI uri) {
+		this(name, type, "", uri, null);
+	}
+
+	/**
+	 * Construct an {@code AppRegistration} object with empty version
+	 *
+	 * @param name app name
+	 * @param type app type
+	 * @param uri URI for the app resource
+	 * @param metadataUri URI for the app metadata resource
+	 */
+	public AppRegistration(String name, ApplicationType type, URI uri, URI metadataUri) {
+		this(name, type, "", uri, metadataUri);
 	}
 
 	/**
@@ -81,21 +98,20 @@ public class AppRegistration implements Comparable<AppRegistration> {
 	 *
 	 * @param name app name
 	 * @param type app type
+	 * @param version app version
 	 * @param uri URI for the app resource
 	 * @param metadataUri URI for the app metadata resource
-	 * @param loader the {@link ResourceLoader} that loads the {@link Resource} for this
-	 * app
 	 */
-	public AppRegistration(String name, ApplicationType type, URI uri, URI metadataUri, ResourceLoader loader) {
+	public AppRegistration(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
 		Assert.hasText(name, "name is required");
 		Assert.notNull(type, "type is required");
+		Assert.notNull(version, "version is required");
 		Assert.notNull(uri, "uri is required");
-		Assert.notNull(loader, "ResourceLoader must not be null");
 		this.name = name;
 		this.type = type;
+		this.version = version;
 		this.uri = uri;
 		this.metadataUri = metadataUri;
-		this.loader = loader;
 	}
 
 	/**
@@ -105,11 +121,30 @@ public class AppRegistration implements Comparable<AppRegistration> {
 		return name;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	/**
 	 * @return the type of the app
 	 */
 	public ApplicationType getType() {
 		return type;
+	}
+
+	public void setType(ApplicationType type) {
+		this.type = type;
+	}
+
+	/**
+	 * @return the version of the app
+	 */
+	public String getVersion() {
+		return version;
+	}
+
+	public void setVersion(String version) {
+		this.version = version;
 	}
 
 	/**
@@ -119,25 +154,30 @@ public class AppRegistration implements Comparable<AppRegistration> {
 		return uri;
 	}
 
+	public void setUri(URI uri) {
+		this.uri = uri;
+	}
+
 	public URI getMetadataUri() {
 		return metadataUri;
 	}
 
-	public Resource getMetadataResource() {
-		return metadataUri != null ? this.loader.getResource(this.metadataUri.toString()) : null;
+	public void setMetadataUri(URI metadataUri) {
+		this.metadataUri = metadataUri;
 	}
 
-	public Resource getResource() {
-		if (this.resource == null) {
-			this.resource = this.loader.getResource(this.uri.toString());
-		}
-		return this.resource;
+	public boolean isDefault() {
+		return isDefault;
+	}
+
+	public void setDefault(boolean aDefault) {
+		isDefault = aDefault;
 	}
 
 	@Override
 	public String toString() {
-		return "AppRegistration{" + "name='" + name + '\'' + ", type='" + type + '\'' + ", uri=" + uri
-				+ ", metadataUri=" + metadataUri + '}';
+		return "AppRegistration{" + "name='" + name + '\'' + ", type='" + type + '\'' + ", version='" + version + '\''
+				+ ", uri=" + uri + ", metadataUri=" + metadataUri + '}';
 	}
 
 	@Override
@@ -146,7 +186,9 @@ public class AppRegistration implements Comparable<AppRegistration> {
 		if (i == 0) {
 			i = this.name.compareTo(that.name);
 		}
+		if (i == 0) {
+			i = this.version.compareTo(that.version);
+		}
 		return i;
 	}
-
 }

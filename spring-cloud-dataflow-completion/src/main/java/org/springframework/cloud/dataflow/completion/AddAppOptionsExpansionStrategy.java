@@ -24,7 +24,7 @@ import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConf
 import org.springframework.cloud.dataflow.core.StreamAppDefinition;
 import org.springframework.cloud.dataflow.core.StreamDefinition;
 import org.springframework.cloud.dataflow.registry.AppRegistration;
-import org.springframework.cloud.dataflow.registry.AppRegistry;
+import org.springframework.cloud.dataflow.registry.AppRegistryCommon;
 
 /**
  * Adds missing application configuration properties at the end of a well formed stream
@@ -38,7 +38,7 @@ class AddAppOptionsExpansionStrategy implements ExpansionStrategy {
 
 	private final ProposalsCollectorSupportUtils collectorSupport;
 
-	public AddAppOptionsExpansionStrategy(AppRegistry appRegistry,
+	public AddAppOptionsExpansionStrategy(AppRegistryCommon appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		this.collectorSupport = new ProposalsCollectorSupportUtils(appRegistry, metadataResolver);
 	}

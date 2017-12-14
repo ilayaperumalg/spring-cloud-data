@@ -17,9 +17,7 @@
 package org.springframework.cloud.dataflow.server.local;
 
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.cloud.dataflow.server.EnableDataFlowServer;
 
 /**

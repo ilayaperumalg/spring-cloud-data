@@ -173,8 +173,8 @@ public class DefaultTaskService implements TaskService {
 		AppRegistration appRegistration = this.registry.find(taskDefinition.getRegisteredAppName(),
 				ApplicationType.task);
 		Assert.notNull(appRegistration, "Unknown task app: " + taskDefinition.getRegisteredAppName());
-		Resource appResource = appRegistration.getResource();
-		Resource metadataResource = appRegistration.getMetadataResource();
+		Resource appResource = this.registry.getAppResource(appRegistration);
+		Resource metadataResource = this.registry.getAppMetadataResource(appRegistration);
 
 		TaskExecution taskExecution = taskExecutionRepository.createTaskExecution(taskName);
 		taskDefinition = this.updateTaskProperties(taskDefinition);

@@ -65,7 +65,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Oleg Zhurakousky
  */
-public class AppRegistry {
+public class AppRegistry implements AppRegistryCommon {
 
 	private static final Logger logger = LoggerFactory.getLogger(AppRegistry.class);
 
@@ -75,15 +75,14 @@ public class AppRegistry {
 
 	private final ResourceLoader resourceLoader;
 
-	private static final Function<Map.Entry<Object, Object>, AbstractMap.SimpleImmutableEntry<String, URI>> toStringAndUriFUNC =
-			kv -> {
-				try {
-					return new AbstractMap.SimpleImmutableEntry<>((String) kv.getKey(), new URI((String) kv.getValue()));
-				}
-				catch (URISyntaxException e) {
-					throw new IllegalArgumentException(e);
-				}
-			};
+	private static final Function<Map.Entry<Object, Object>, AbstractMap.SimpleImmutableEntry<String, URI>> toStringAndUriFUNC = kv -> {
+		try {
+			return new AbstractMap.SimpleImmutableEntry<>((String) kv.getKey(), new URI((String) kv.getValue()));
+		}
+		catch (URISyntaxException e) {
+			throw new IllegalArgumentException(e);
+		}
+	};
 
 	public AppRegistry(UriRegistry uriRegistry, ResourceLoader resourceLoader) {
 		Assert.notNull(uriRegistry, "'uriRegistry' must not be null");
@@ -97,17 +96,18 @@ public class AppRegistry {
 			String key = key(name, type);
 			URI uri = this.uriRegistry.find(key);
 			URI metadataUri = metadataUriFromRegistry(key);
-			return new AppRegistration(name, type, uri, metadataUri, this.resourceLoader);
+			return new AppRegistration(name, type, uri, metadataUri);
 		}
 		catch (IllegalArgumentException e) {
-			return null; //ignore and treat as not found
+			return null; // ignore and treat as not found
 		}
 	}
 
+	@Override
 	public List<AppRegistration> findAll() {
 		return this.uriRegistry.findAll().entrySet().stream()
 				.flatMap(kv -> toValidAppRegistration(kv, metadataUriFromRegistry(kv.getKey())))
-				.sorted((a,b) -> a.compareTo(b))
+				.sorted((a, b) -> a.compareTo(b))
 				.collect(Collectors.toList());
 	}
 
@@ -141,19 +141,19 @@ public class AppRegistry {
 		if (metadataUri != null) {
 			this.uriRegistry.register(metadataKey(name, type), metadataUri);
 		}
-		return new AppRegistration(name, type, uri, metadataUri, this.resourceLoader);
+		return new AppRegistration(name, type, uri, metadataUri);
 	}
 
 	public List<AppRegistration> importAll(boolean overwrite, Resource... resources) {
 		Set<String> registeredKeys = overwrite ? Collections.emptySet() : uriRegistry.findAll().keySet();
 		return Stream.of(resources)
-			.map(this::loadProperties)
-			.flatMap(prop -> prop.entrySet().stream()
-					.map(toStringAndUriFUNC)
-					.flatMap(kv -> toValidAppRegistration(kv, metadataUriFromProperties(kv.getKey(), prop)))
-					.filter(ar -> !registeredKeys.contains(key(ar.getName(), ar.getType())))
-					.map(ar -> save(ar.getName(), ar.getType(), ar.getUri(), ar.getMetadataUri()))
-			).collect(Collectors.toList());
+				.map(this::loadProperties)
+				.flatMap(prop -> prop.entrySet().stream()
+						.map(toStringAndUriFUNC)
+						.flatMap(kv -> toValidAppRegistration(kv, metadataUriFromProperties(kv.getKey(), prop)))
+						.filter(ar -> !registeredKeys.contains(key(ar.getName(), ar.getType())))
+						.map(ar -> save(ar.getName(), ar.getType(), ar.getUri(), ar.getMetadataUri())))
+				.collect(Collectors.toList());
 	}
 
 	private Properties loadProperties(Resource resource) {
@@ -166,8 +166,8 @@ public class AppRegistry {
 	}
 
 	/**
-	 * Deletes an {@link AppRegistration}. If the {@link AppRegistration} does not exist,
-	 * a {@link NoSuchAppRegistrationException} will be thrown.
+	 * Deletes an {@link AppRegistration}. If the {@link AppRegistration} does not exist, a
+	 * {@link NoSuchAppRegistrationException} will be thrown.
 	 *
 	 * @param name Name of the AppRegistration to delete
 	 * @param type Type of the AppRegistration to delete
@@ -186,7 +186,7 @@ public class AppRegistry {
 	 * Builds a {@link Stream} from key/value mapping.
 	 * @return
 	 * <ul>
-	 * <li>valid AppRegistration as single element Stream </li>
+	 * <li>valid AppRegistration as single element Stream</li>
 	 * <li>silently ignores well malformed metadata entries (0 element Stream) or</li>
 	 * <li>fails otherwise.</li>
 	 * </ul>
@@ -201,7 +201,7 @@ public class AppRegistry {
 			String name = tokens[1];
 			ApplicationType type = ApplicationType.valueOf(tokens[0]);
 			URI appURI = warnOnMalformedURI(key, kv.getValue());
-			return Stream.of(new AppRegistration(name, type, appURI, metadataURI, resourceLoader));
+			return Stream.of(new AppRegistration(name, type, appURI, metadataURI));
 		}
 		else {
 			Assert.isTrue(tokens.length == 3 && METADATA_KEY_SUFFIX.equals(tokens[2]),
@@ -247,7 +247,8 @@ public class AppRegistry {
 			logger.warn(String.format("Error when registering '%s': URI is required", key));
 		}
 		else if (!StringUtils.hasText(uri.getScheme())) {
-			logger.warn(String.format("Error when registering '%s' with URI %s: URI scheme must be specified", key, uri));
+			logger.warn(
+					String.format("Error when registering '%s' with URI %s: URI scheme must be specified", key, uri));
 		}
 		else if (!StringUtils.hasText(uri.getSchemeSpecificPart())) {
 			logger.warn(String.format("Error when registering '%s' with URI %s: URI scheme-specific part must be " +
@@ -255,4 +256,23 @@ public class AppRegistry {
 		}
 		return uri;
 	}
+
+	@Override
+	public boolean appExist(String name, ApplicationType type) {
+		return find(name, type) != null;
+	}
+
+	@Override
+	public Resource getAppResource(AppRegistration app) {
+		return this.resourceLoader.getResource(app.getUri().toString());
+	}
+
+	@Override
+	public Resource getAppMetadataResource(AppRegistration app) {
+		if (app.getMetadataUri() != null) {
+			return this.resourceLoader.getResource(app.getMetadataUri().toString());
+		}
+		return null;
+	}
+
 }

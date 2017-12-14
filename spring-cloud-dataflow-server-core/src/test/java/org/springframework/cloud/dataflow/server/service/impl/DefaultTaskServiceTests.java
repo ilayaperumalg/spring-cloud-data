@@ -385,7 +385,7 @@ public class DefaultTaskServiceTests {
 
 	private void initializeSuccessfulRegistry() {
 		when(this.appRegistry.find(anyString(), any(ApplicationType.class)))
-				.thenReturn(new AppRegistration("some-name", task, URI.create("http://helloworld"), resourceLoader));
+				.thenReturn(new AppRegistration("some-name", task, URI.create("http://helloworld")));
 	}
 
 	private void initializeFailRegistry() throws IllegalArgumentException{

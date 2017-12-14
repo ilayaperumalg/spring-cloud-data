@@ -167,7 +167,7 @@ public class AppRegistryController implements ResourceLoaderAware {
 		DetailedAppRegistrationResource result = new DetailedAppRegistrationResource(
 				assembler.toResource(registration));
 		List<ConfigurationMetadataProperty> properties = metadataResolver
-				.listProperties(registration.getMetadataResource());
+				.listProperties(appRegistry.getAppMetadataResource(registration));
 		for (ConfigurationMetadataProperty property : properties) {
 			result.addOption(property);
 		}
@@ -262,7 +262,7 @@ public class AppRegistryController implements ResourceLoaderAware {
 			appRegistrations.stream().filter(r -> r.getMetadataUri() != null).parallel().forEach(r -> {
 				logger.info("Eagerly fetching {}", r.getMetadataUri());
 				try {
-					r.getMetadataResource();
+					this.appRegistry.getAppMetadataResource(r);
 				}
 				catch (Exception e) {
 					logger.warn("Could not fetch " + r.getMetadataUri(), e);

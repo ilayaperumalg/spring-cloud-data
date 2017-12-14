@@ -25,7 +25,7 @@ import org.springframework.cloud.dataflow.core.StreamAppDefinition;
 import org.springframework.cloud.dataflow.core.StreamDefinition;
 import org.springframework.cloud.dataflow.core.dsl.CheckPointedParseException;
 import org.springframework.cloud.dataflow.registry.AppRegistration;
-import org.springframework.cloud.dataflow.registry.AppRegistry;
+import org.springframework.cloud.dataflow.registry.AppRegistryCommon;
 
 /**
  * Provides completions for the case where the user has started to type an app
@@ -40,7 +40,7 @@ public class UnfinishedConfigurationPropertyNameRecoveryStrategy
 
 	private final ProposalsCollectorSupportUtils collectorSupport;
 
-	UnfinishedConfigurationPropertyNameRecoveryStrategy(AppRegistry appRegistry,
+	UnfinishedConfigurationPropertyNameRecoveryStrategy(AppRegistryCommon appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		super(CheckPointedParseException.class, "file --foo", "file | bar --quick", "file --foo.",
 				"file | bar " + "--quick.");

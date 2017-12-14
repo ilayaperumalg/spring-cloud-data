@@ -26,7 +26,7 @@ import org.springframework.cloud.dataflow.core.dsl.CheckPointedParseException;
 import org.springframework.cloud.dataflow.core.dsl.Token;
 import org.springframework.cloud.dataflow.core.dsl.TokenKind;
 import org.springframework.cloud.dataflow.registry.AppRegistration;
-import org.springframework.cloud.dataflow.registry.AppRegistry;
+import org.springframework.cloud.dataflow.registry.AppRegistryCommon;
 
 
 /**
@@ -46,7 +46,7 @@ public class ConfigurationPropertyValueHintTaskRecoveryStrategy
 	@Autowired
 	private ValueHintProvider[] valueHintProviders = new ValueHintProvider[0];
 
-	ConfigurationPropertyValueHintTaskRecoveryStrategy(AppRegistry appRegistry,
+	ConfigurationPropertyValueHintTaskRecoveryStrategy(AppRegistryCommon appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		super(CheckPointedParseException.class, "foo --bar=");
 		this.collectorSupport = new ProposalsCollectorSupportUtils(appRegistry, metadataResolver);

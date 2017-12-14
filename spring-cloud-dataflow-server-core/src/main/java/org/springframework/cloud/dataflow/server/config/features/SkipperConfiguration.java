@@ -50,16 +50,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Ilayaperumal Gopinathan
  */
 @Configuration
-//@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
+@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 public class SkipperConfiguration {
 
 	private static Log logger = LogFactory.getLog(SkipperConfiguration.class);
 
-//	@Bean
-//	public AppRegistryService appRegistry2(AppRegistrationRepository appRegistrationRepository,
-//			DelegatingResourceLoader resourceLoader) {
-//		return new AppRegistryService(appRegistrationRepository, resourceLoader);
-//	}
+	@Bean
+	public AppRegistryService appRegistry2(AppRegistrationRepository appRegistrationRepository,
+			DelegatingResourceLoader resourceLoader) {
+		return new AppRegistryService(appRegistrationRepository, resourceLoader);
+	}
 
 	@Bean
 	public ForkJoinPoolFactoryBean appRegistryFJPFB() {
@@ -68,11 +68,11 @@ public class SkipperConfiguration {
 		return forkJoinPoolFactoryBean;
 	}
 
-//	@Bean
-//	public VersionedAppRegistryController appRegistryController2(AppRegistryService appRegistry,
-//			ApplicationConfigurationMetadataResolver metadataResolver) {
-//		return new VersionedAppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
-//	}
+	@Bean
+	public VersionedAppRegistryController appRegistryController2(AppRegistryService appRegistry,
+			ApplicationConfigurationMetadataResolver metadataResolver) {
+		return new VersionedAppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
+	}
 
 	@Configuration
 	@ConditionalOnBean({ StreamDefinitionRepository.class, StreamDeploymentRepository.class })

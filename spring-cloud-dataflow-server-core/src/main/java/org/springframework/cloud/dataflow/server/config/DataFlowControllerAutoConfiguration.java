@@ -31,6 +31,7 @@ import org.springframework.analytics.rest.controller.FieldValueCounterController
 import org.springframework.batch.admin.service.JobService;
 import org.springframework.boot.actuate.metrics.repository.MetricRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -47,8 +48,8 @@ import org.springframework.cloud.dataflow.completion.StreamCompletionProvider;
 import org.springframework.cloud.dataflow.completion.TaskCompletionProvider;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.registry.AppRegistry;
+import org.springframework.cloud.dataflow.registry.AppRegistryCommon;
 import org.springframework.cloud.dataflow.registry.RdbmsUriRegistry;
-import org.springframework.cloud.dataflow.registry.skipper.AppRegistryService;
 import org.springframework.cloud.dataflow.server.config.apps.CommonApplicationProperties;
 import org.springframework.cloud.dataflow.server.config.features.FeaturesProperties;
 import org.springframework.cloud.dataflow.server.config.features.SkipperConfiguration;
@@ -76,7 +77,10 @@ import org.springframework.cloud.deployer.spi.app.AppDeployer;
 import org.springframework.cloud.deployer.spi.task.TaskLauncher;
 import org.springframework.cloud.skipper.client.SkipperClient;
 import org.springframework.cloud.task.repository.TaskExplorer;
-import org.springframework.context.annotation.*;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.hateoas.EntityLinks;
@@ -99,8 +103,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableConfigurationProperties({ FeaturesProperties.class, VersionInfoProperties.class, MetricsProperties.class })
 @ConditionalOnProperty(prefix = "dataflow.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCircuitBreaker
-@EntityScan({ "org.springframework.cloud.dataflow.registry.skipper" })
-@EnableJpaRepositories(basePackages = "org.springframework.cloud.dataflow.registry.skipper.BOZA")
+@EntityScan({ "org.springframework.cloud.dataflow.registry" })
+@EnableJpaRepositories(basePackages = "org.springframework.cloud.dataflow.registry.skipper")
 @EnableTransactionManagement
 public class DataFlowControllerAutoConfiguration {
 
@@ -112,8 +116,10 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean(AppRegistryService.class)
+	//s@ConditionalOnMissingBean(AppRegistryService.class)
 	//@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
+	@ConditionalOnExpression("#{'${" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.SKIPPER_ENABLED
+			+ ":false}'.equalsIgnoreCase('false')}")
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry(uriRegistry, resourceLoader);
 	}
@@ -136,7 +142,7 @@ public class DataFlowControllerAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(StreamDefinitionRepository.class)
 	public StreamDefinitionController streamDefinitionController(StreamDefinitionRepository repository,
-			AppRegistry appRegistry, StreamService streamService) {
+			AppRegistryCommon appRegistry, StreamService streamService) {
 		return new StreamDefinitionController(repository, appRegistry, streamService);
 	}
 
@@ -162,7 +168,7 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	public AppDeploymentRequestCreator streamDeploymentPropertiesUtils(AppRegistry appRegistry,
+	public AppDeploymentRequestCreator streamDeploymentPropertiesUtils(AppRegistryCommon appRegistry,
 			CommonApplicationProperties commonApplicationProperties,
 			ApplicationConfigurationMetadataResolver applicationConfigurationMetadataResolver) {
 		return new AppDeploymentRequestCreator(appRegistry,
@@ -296,7 +302,9 @@ public class DataFlowControllerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean(VersionedAppRegistryController.class)
-//	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
+	@ConditionalOnExpression("#{'${" + FeaturesProperties.FEATURES_PREFIX + "." + FeaturesProperties.SKIPPER_ENABLED
+			+ ":false}'.equalsIgnoreCase('false')}")
+	//@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 	public AppRegistryController appRegistryController(AppRegistry appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
