@@ -33,6 +33,7 @@ import org.springframework.boot.actuate.metrics.repository.MetricRepository;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
@@ -47,28 +48,12 @@ import org.springframework.cloud.dataflow.completion.TaskCompletionProvider;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.registry.AppRegistry;
 import org.springframework.cloud.dataflow.registry.RdbmsUriRegistry;
+import org.springframework.cloud.dataflow.registry.skipper.AppRegistryService;
 import org.springframework.cloud.dataflow.server.config.apps.CommonApplicationProperties;
 import org.springframework.cloud.dataflow.server.config.features.FeaturesProperties;
 import org.springframework.cloud.dataflow.server.config.features.SkipperConfiguration;
-import org.springframework.cloud.dataflow.server.controller.AboutController;
-import org.springframework.cloud.dataflow.server.controller.AppRegistryController;
-import org.springframework.cloud.dataflow.server.controller.CompletionController;
-import org.springframework.cloud.dataflow.server.controller.FeaturesController;
-import org.springframework.cloud.dataflow.server.controller.JobExecutionController;
-import org.springframework.cloud.dataflow.server.controller.JobInstanceController;
-import org.springframework.cloud.dataflow.server.controller.JobStepExecutionController;
-import org.springframework.cloud.dataflow.server.controller.JobStepExecutionProgressController;
-import org.springframework.cloud.dataflow.server.controller.MetricsController;
-import org.springframework.cloud.dataflow.server.controller.RestControllerAdvice;
-import org.springframework.cloud.dataflow.server.controller.RootController;
-import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController;
+import org.springframework.cloud.dataflow.server.controller.*;
 import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController.AppInstanceController;
-import org.springframework.cloud.dataflow.server.controller.StreamDefinitionController;
-import org.springframework.cloud.dataflow.server.controller.StreamDeploymentController;
-import org.springframework.cloud.dataflow.server.controller.TaskDefinitionController;
-import org.springframework.cloud.dataflow.server.controller.TaskExecutionController;
-import org.springframework.cloud.dataflow.server.controller.ToolsController;
-import org.springframework.cloud.dataflow.server.controller.UiController;
 import org.springframework.cloud.dataflow.server.controller.security.LoginController;
 import org.springframework.cloud.dataflow.server.controller.security.SecurityController;
 import org.springframework.cloud.dataflow.server.controller.support.MetricStore;
@@ -91,10 +76,7 @@ import org.springframework.cloud.deployer.spi.app.AppDeployer;
 import org.springframework.cloud.deployer.spi.task.TaskLauncher;
 import org.springframework.cloud.skipper.client.SkipperClient;
 import org.springframework.cloud.task.repository.TaskExplorer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.*;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.hateoas.EntityLinks;
@@ -117,7 +99,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableConfigurationProperties({ FeaturesProperties.class, VersionInfoProperties.class, MetricsProperties.class })
 @ConditionalOnProperty(prefix = "dataflow.server", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCircuitBreaker
-@EnableJpaRepositories(basePackages = "org.springframework.cloud.dataflow.registry.skipper")
+@EntityScan({ "org.springframework.cloud.dataflow.registry.skipper" })
+@EnableJpaRepositories(basePackages = "org.springframework.cloud.dataflow.registry.skipper.BOZA")
 @EnableTransactionManagement
 public class DataFlowControllerAutoConfiguration {
 
@@ -129,7 +112,8 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
+	@ConditionalOnMissingBean(AppRegistryService.class)
+	//@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry(uriRegistry, resourceLoader);
 	}
@@ -311,7 +295,8 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
+	@ConditionalOnMissingBean(VersionedAppRegistryController.class)
+//	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
 	public AppRegistryController appRegistryController(AppRegistry appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());

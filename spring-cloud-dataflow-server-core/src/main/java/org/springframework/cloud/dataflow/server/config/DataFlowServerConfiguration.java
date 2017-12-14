@@ -24,9 +24,11 @@ import org.h2.tools.Server;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.dataflow.completion.CompletionConfiguration;
 import org.springframework.cloud.dataflow.server.config.apps.CommonApplicationProperties;
@@ -69,6 +71,7 @@ import static org.springframework.hateoas.config.EnableHypermediaSupport.Hyperme
 public class DataFlowServerConfiguration {
 
 	@Configuration
+	@AutoConfigureBefore({HibernateJpaAutoConfiguration.class, WebConfiguration.class})
 	@ConditionalOnProperty(name = "spring.dataflow.embedded.database.enabled", havingValue = "true", matchIfMissing = true)
 	@ConditionalOnExpression("#{'${spring.datasource.url:}'.startsWith('jdbc:h2:tcp://localhost:')}")
 	public static class H2ServerConfiguration {
