@@ -15,7 +15,7 @@
  */
 package org.springframework.cloud.dataflow.server.controller;
 
-import org.springframework.cloud.dataflow.registry.skipper.AppRegistration2;
+import org.springframework.cloud.dataflow.registry.skipper.VersionedAppRegistration;
 
 /**
  * @author Glenn Renfro
@@ -30,9 +30,9 @@ public class AppAlreadyRegisteredException2 extends IllegalStateException {
 
 	private static final long serialVersionUID = 1L;
 
-	private final AppRegistration2 previous;
+	private final VersionedAppRegistration previous;
 
-	public AppAlreadyRegisteredException2(AppRegistration2 previous) {
+	public AppAlreadyRegisteredException2(VersionedAppRegistration previous) {
 		this.previous = previous;
 	}
 
@@ -42,7 +42,7 @@ public class AppAlreadyRegisteredException2 extends IllegalStateException {
 				previous.getName(), previous.getUri());
 	}
 
-	public AppRegistration2 getPrevious() {
+	public VersionedAppRegistration getPrevious() {
 		return previous;
 	}
 }

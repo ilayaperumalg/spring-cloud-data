@@ -16,16 +16,13 @@
 
 package org.springframework.cloud.dataflow.server.config;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.sql.DataSource;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.analytics.metrics.AggregateCounterRepository;
 import org.springframework.analytics.metrics.FieldValueCounterRepository;
 import org.springframework.analytics.rest.controller.AggregateCounterController;
@@ -38,7 +35,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.cloud.client.circuitbreaker.EnableCircuitBreaker;
 import org.springframework.cloud.common.security.AuthorizationProperties;
 import org.springframework.cloud.common.security.support.FileSecurityProperties;
@@ -51,12 +47,28 @@ import org.springframework.cloud.dataflow.completion.TaskCompletionProvider;
 import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.registry.AppRegistry;
 import org.springframework.cloud.dataflow.registry.RdbmsUriRegistry;
-import org.springframework.cloud.dataflow.registry.skipper.AppRegistrationRepository;
-import org.springframework.cloud.dataflow.registry.skipper.AppRegistry2;
 import org.springframework.cloud.dataflow.server.config.apps.CommonApplicationProperties;
 import org.springframework.cloud.dataflow.server.config.features.FeaturesProperties;
-import org.springframework.cloud.dataflow.server.controller.*;
+import org.springframework.cloud.dataflow.server.config.features.SkipperConfiguration;
+import org.springframework.cloud.dataflow.server.controller.AboutController;
+import org.springframework.cloud.dataflow.server.controller.AppRegistryController;
+import org.springframework.cloud.dataflow.server.controller.CompletionController;
+import org.springframework.cloud.dataflow.server.controller.FeaturesController;
+import org.springframework.cloud.dataflow.server.controller.JobExecutionController;
+import org.springframework.cloud.dataflow.server.controller.JobInstanceController;
+import org.springframework.cloud.dataflow.server.controller.JobStepExecutionController;
+import org.springframework.cloud.dataflow.server.controller.JobStepExecutionProgressController;
+import org.springframework.cloud.dataflow.server.controller.MetricsController;
+import org.springframework.cloud.dataflow.server.controller.RestControllerAdvice;
+import org.springframework.cloud.dataflow.server.controller.RootController;
+import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController;
 import org.springframework.cloud.dataflow.server.controller.RuntimeAppsController.AppInstanceController;
+import org.springframework.cloud.dataflow.server.controller.StreamDefinitionController;
+import org.springframework.cloud.dataflow.server.controller.StreamDeploymentController;
+import org.springframework.cloud.dataflow.server.controller.TaskDefinitionController;
+import org.springframework.cloud.dataflow.server.controller.TaskExecutionController;
+import org.springframework.cloud.dataflow.server.controller.ToolsController;
+import org.springframework.cloud.dataflow.server.controller.UiController;
 import org.springframework.cloud.dataflow.server.controller.security.LoginController;
 import org.springframework.cloud.dataflow.server.controller.security.SecurityController;
 import org.springframework.cloud.dataflow.server.controller.support.MetricStore;
@@ -77,10 +89,7 @@ import org.springframework.cloud.deployer.resource.registry.UriRegistry;
 import org.springframework.cloud.deployer.resource.support.DelegatingResourceLoader;
 import org.springframework.cloud.deployer.spi.app.AppDeployer;
 import org.springframework.cloud.deployer.spi.task.TaskLauncher;
-import org.springframework.cloud.skipper.client.DefaultSkipperClient;
 import org.springframework.cloud.skipper.client.SkipperClient;
-import org.springframework.cloud.skipper.client.SkipperClientProperties;
-import org.springframework.cloud.skipper.client.SkipperClientResponseErrorHandler;
 import org.springframework.cloud.task.repository.TaskExplorer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -89,11 +98,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.hateoas.EntityLinks;
-import org.springframework.http.converter.StringHttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.scheduling.concurrent.ForkJoinPoolFactoryBean;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
-import org.springframework.web.client.RestTemplate;
 
 /**
  * Configuration for the Data Flow Server Controllers.
@@ -106,7 +112,7 @@ import org.springframework.web.client.RestTemplate;
  */
 @SuppressWarnings("all")
 @Configuration
-@Import(CompletionConfiguration.class)
+@Import({CompletionConfiguration.class, SkipperConfiguration.class})
 @ConditionalOnBean({ EnableDataFlowServerConfiguration.Marker.class, AppDeployer.class, TaskLauncher.class })
 @EnableConfigurationProperties({ FeaturesProperties.class, VersionInfoProperties.class, MetricsProperties.class })
 @ConditionalOnProperty(prefix = "dataflow.server", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -123,16 +129,9 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED, matchIfMissing = true)
+	@ConditionalOnMissingBean
 	public AppRegistry appRegistry(UriRegistry uriRegistry, DelegatingResourceLoader resourceLoader) {
 		return new AppRegistry(uriRegistry, resourceLoader);
-	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
-	public AppRegistry2 appRegistry2(AppRegistrationRepository appRegistrationRepository,
-			DelegatingResourceLoader resourceLoader) {
-		return new AppRegistry2(appRegistrationRepository, resourceLoader);
 	}
 
 	@Bean
@@ -312,19 +311,11 @@ public class DataFlowControllerAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED, matchIfMissing = true)
+	@ConditionalOnMissingBean
 	public AppRegistryController appRegistryController(AppRegistry appRegistry,
 			ApplicationConfigurationMetadataResolver metadataResolver) {
 		return new AppRegistryController(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
 	}
-
-	@Bean
-	@ConditionalOnProperty(prefix = FeaturesProperties.FEATURES_PREFIX, name = FeaturesProperties.SKIPPER_ENABLED)
-	public AppRegistryController2 appRegistryController2(AppRegistry2 appRegistry,
-														ApplicationConfigurationMetadataResolver metadataResolver) {
-		return new AppRegistryController2(appRegistry, metadataResolver, appRegistryFJPFB().getObject());
-	}
-
 
 	@Bean
 	public SecurityController securityController(SecurityStateBean securityStateBean) {
@@ -388,29 +379,6 @@ public class DataFlowControllerAutoConfiguration {
 	@Bean
 	public SecurityStateBean securityStateBean() {
 		return new SecurityStateBean();
-	}
-
-	@Configuration
-	@ConditionalOnBean({ StreamDefinitionRepository.class, StreamDeploymentRepository.class })
-	@EnableConfigurationProperties(SkipperClientProperties.class)
-	public static class SkipperConfiguration {
-
-		@Bean
-		public SkipperClient skipperClient(SkipperClientProperties properties,
-				RestTemplateBuilder restTemplateBuilder, ObjectMapper objectMapper) {
-			RestTemplate restTemplate = restTemplateBuilder.errorHandler(new SkipperClientResponseErrorHandler
-					(objectMapper)).messageConverters(Arrays.asList(new StringHttpMessageConverter(), new
-					MappingJackson2HttpMessageConverter(objectMapper))).build();
-			return new DefaultSkipperClient(properties.getUri(), restTemplate);
-		}
-
-		@Bean
-		public SkipperStreamDeployer skipperStreamDeployer(SkipperClient skipperClient,
-				StreamDeploymentRepository streamDeploymentRepository,
-				SkipperClientProperties skipperClientProperties) {
-			logger.info("Skipper URI [" + skipperClientProperties.getUri() + "]");
-			return new SkipperStreamDeployer(skipperClient, streamDeploymentRepository);
-		}
 	}
 
 	@ConfigurationProperties(prefix = "maven")

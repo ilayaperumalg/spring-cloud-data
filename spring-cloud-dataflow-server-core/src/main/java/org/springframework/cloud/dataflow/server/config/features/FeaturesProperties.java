@@ -70,7 +70,7 @@ public class FeaturesProperties {
 	}
 
 	public boolean isSkipperEnabled() {
-		return skipperEnabled;
+		return this.skipperEnabled;
 	}
 
 	public void setSkipperEnabled(boolean skipperEnabled) {

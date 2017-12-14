@@ -44,7 +44,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * Convenience wrapper for the {@link } that operates on higher level
- * {@link AppRegistration2} objects and supports on-demand loading of {@link Resource}s.
+ * {@link AppRegistryService} objects and supports on-demand loading of {@link Resource}s.
  * <p>
  * <p>
  * Stores AppRegistration with up to two keys:
@@ -62,9 +62,9 @@ import org.springframework.util.StringUtils;
  * @author Oleg Zhurakousky
  * @author Christian Tzolov
  */
-public class AppRegistry2 {
+public class AppRegistryService {
 
-	private static final Logger logger = LoggerFactory.getLogger(AppRegistry2.class);
+	private static final Logger logger = LoggerFactory.getLogger(AppRegistryService.class);
 
 	private static final String METADATA_KEY_SUFFIX = "metadata";
 
@@ -72,33 +72,37 @@ public class AppRegistry2 {
 
 	private final ResourceLoader resourceLoader;
 
-	public AppRegistry2(AppRegistrationRepository appRegistrationRepository, ResourceLoader resourceLoader) {
+	public AppRegistryService(AppRegistrationRepository appRegistrationRepository, ResourceLoader resourceLoader) {
 		Assert.notNull(appRegistrationRepository, "'appRegistrationRepository' must not be null");
 		Assert.notNull(resourceLoader, "'resourceLoader' must not be null");
 		this.appRegistrationRepository = appRegistrationRepository;
 		this.resourceLoader = resourceLoader;
 	}
 
-	public Resource getAppMetadataResource(AppRegistration2 appRegistration) {
+	public ResourceLoader getResourceLoader() {
+		return this.resourceLoader;
+	}
+
+	public Resource getAppMetadataResource(VersionedAppRegistration appRegistration) {
 		return appRegistration.getMetadataUri() != null ? this.resourceLoader.getResource(
 				appRegistration.getMetadataUri().toString()) : null;
 	}
 
-	public Resource getAppResource(AppRegistration2 appRegistration) {
+	public Resource getAppResource(VersionedAppRegistration appRegistration) {
 		return this.resourceLoader.getResource(appRegistration.getUri().toString());
 	}
 
-	public AppRegistration2 find(String name, ApplicationType type, String version) {
+	public VersionedAppRegistration find(String name, ApplicationType type, String version) {
 		return this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(name, type, version);
 	}
 
-	public AppRegistration2 getDefaultApp(String name, ApplicationType type) {
+	public VersionedAppRegistration getDefaultApp(String name, ApplicationType type) {
 		return this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndDefaultIsTrue(name, type);
 	}
 
 	@Transactional
 	public void setDefaultApp(String name, ApplicationType type, String version) {
-		AppRegistration2 newDefault = this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(name,
+		VersionedAppRegistration newDefault = this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(name,
 				type, version);
 
 		if (newDefault == null) {
@@ -107,7 +111,7 @@ public class AppRegistry2 {
 
 		newDefault.setDefault(true);
 
-		AppRegistration2 oldDefault = this.appRegistrationRepository
+		VersionedAppRegistration oldDefault = this.appRegistrationRepository
 				.findAppRegistration2ByNameAndTypeAndDefaultIsTrue(name, type);
 		if (oldDefault != null) {
 			oldDefault.setDefault(false);
@@ -116,12 +120,12 @@ public class AppRegistry2 {
 		this.appRegistrationRepository.save(newDefault);
 	}
 
-	public List<AppRegistration2> findAll() {
+	public List<VersionedAppRegistration> findAll() {
 		return this.appRegistrationRepository.findAll();
 	}
 
-	public Page<AppRegistration2> findAll(Pageable pageable) {
-		List<AppRegistration2> appRegistrations = this.findAll();
+	public Page<VersionedAppRegistration> findAll(Pageable pageable) {
+		List<VersionedAppRegistration> appRegistrations = this.findAll();
 		long to = Math.min(appRegistrations.size(), pageable.getOffset() + pageable.getPageSize());
 
 		// if a request for page is higher than number of items we actually have is either
@@ -145,12 +149,12 @@ public class AppRegistry2 {
 				appRegistrations.size());
 	}
 
-	public AppRegistration2 save(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
-		return this.appRegistrationRepository.save(new AppRegistration2(name, type, version, uri, metadataUri));
+	public VersionedAppRegistration save(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
+		return this.appRegistrationRepository.save(new VersionedAppRegistration(name, type, version, uri, metadataUri));
 	}
 
 	/**
-	 * Deletes an {@link AppRegistration2}. If the {@link AppRegistration2} does not exist, a
+	 * Deletes an {@link VersionedAppRegistration}. If the {@link VersionedAppRegistration} does not exist, a
 	 * {@link NoSuchAppRegistrationException2} will be thrown.
 	 *
 	 * @param name Name of the AppRegistration to delete
@@ -162,7 +166,7 @@ public class AppRegistry2 {
 		//TODO select new default
 	}
 
-	public List<AppRegistration2> importAll(boolean overwrite, Resource... resources) {
+	public List<VersionedAppRegistration> importAll(boolean overwrite, Resource... resources) {
 		return Stream.of(resources)
 				.map(this::loadProperties)
 				.flatMap(prop -> prop.entrySet().stream()
@@ -173,7 +177,7 @@ public class AppRegistry2 {
 				.collect(Collectors.toList());
 	}
 
-	private boolean isOverwrite(AppRegistration2 app, boolean overwrite) {
+	private boolean isOverwrite(VersionedAppRegistration app, boolean overwrite) {
 		return overwrite || this.appRegistrationRepository.findAppRegistration2ByNameAndTypeAndVersion(app.getName(),
 				app.getType(), app.getVersion()) == null;
 	}
@@ -208,7 +212,7 @@ public class AppRegistry2 {
 	 * @param kv key/value representing app key (key) and app URI (value)
 	 * @param metadataURI metadataUri computed from a given app key
 	 */
-	private Stream<AppRegistration2> toValidAppRegistration(Entry<String, URI> kv, URI metadataURI) {
+	private Stream<VersionedAppRegistration> toValidAppRegistration(Entry<String, URI> kv, URI metadataURI) {
 		String key = kv.getKey();
 		String[] tokens = key.split("\\.");
 		if (tokens.length == 2) {
@@ -222,7 +226,7 @@ public class AppRegistry2 {
 			String version = appURI.getSchemeSpecificPart()
 					.substring(appURI.getSchemeSpecificPart().lastIndexOf(":") + 1);
 
-			return Stream.of(new AppRegistration2(name, type, version, appURI, metadataURI));
+			return Stream.of(new VersionedAppRegistration(name, type, version, appURI, metadataURI));
 		}
 		else {
 			Assert.isTrue(tokens.length == 3 && METADATA_KEY_SUFFIX.equals(tokens[2]),

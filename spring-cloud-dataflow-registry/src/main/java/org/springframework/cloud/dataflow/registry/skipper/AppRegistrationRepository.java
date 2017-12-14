@@ -8,17 +8,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /**
  * @author Christian Tzolov
  */
-public interface AppRegistrationRepository extends JpaRepository<AppRegistration2, String> {
+public interface AppRegistrationRepository extends JpaRepository<VersionedAppRegistration, String> {
 
-	AppRegistration2 findAppRegistration2ByNameAndTypeAndVersion(String name, ApplicationType type, String version);
+	VersionedAppRegistration findAppRegistration2ByNameAndTypeAndVersion(String name, ApplicationType type, String version);
 
-	AppRegistration2 findAppRegistration2ByNameAndTypeAndDefaultIsTrue(String name, ApplicationType type);
+	VersionedAppRegistration findAppRegistration2ByNameAndTypeAndDefaultIsTrue(String name, ApplicationType type);
 
 	void deleteAppRegistration2ByNameAAndTypeAndVersion(String name, ApplicationType type, String version);
 
 	@Override
-	<S extends AppRegistration2> S save(S s);
+	<S extends VersionedAppRegistration> S save(S s);
 
 	@Override
-	List<AppRegistration2> findAll();
+	List<VersionedAppRegistration> findAll();
 }

@@ -34,7 +34,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 @Entity
-public class AppRegistration2 implements Comparable<AppRegistration2> {
+public class VersionedAppRegistration implements Comparable<VersionedAppRegistration> {
 
 	/**
 	 * App name.
@@ -69,7 +69,7 @@ public class AppRegistration2 implements Comparable<AppRegistration2> {
 	 */
 	private boolean isDefault;
 
-	public AppRegistration2() {
+	public VersionedAppRegistration() {
 	}
 
 	/**
@@ -81,7 +81,7 @@ public class AppRegistration2 implements Comparable<AppRegistration2> {
 	 * @param uri URI for the app resource
 	 * @param metadataUri URI for the app metadata resource
 	 */
-	public AppRegistration2(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
+	public VersionedAppRegistration(String name, ApplicationType type, String version, URI uri, URI metadataUri) {
 		Assert.hasText(name, "name is required");
 		Assert.notNull(type, "type is required");
 		Assert.notNull(version, "version is required");
@@ -160,7 +160,7 @@ public class AppRegistration2 implements Comparable<AppRegistration2> {
 	}
 
 	@Override
-	public int compareTo(AppRegistration2 that) {
+	public int compareTo(VersionedAppRegistration that) {
 		int i = this.type.compareTo(that.type);
 		if (i == 0) {
 			i = this.name.compareTo(that.name);
