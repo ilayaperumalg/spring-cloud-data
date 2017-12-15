@@ -97,8 +97,8 @@ public class DefaultAppRegistryService implements AppRegistryService {
 
 
 	public Resource getResource(String uri) {
-        return (uri == null)? null: this.resourceLoader.getResource(uri);
-    }
+		return (uri == null)? null: this.resourceLoader.getResource(uri);
+	}
 
 	@Override
 	public AppRegistration find(String name, ApplicationType type) {

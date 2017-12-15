@@ -47,6 +47,7 @@ import org.springframework.cloud.dataflow.server.service.TaskService;
 import org.springframework.cloud.deployer.spi.task.TaskLauncher;
 import org.springframework.cloud.task.repository.TaskExplorer;
 import org.springframework.cloud.task.repository.TaskRepository;
+import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -386,6 +387,8 @@ public class DefaultTaskServiceTests {
 	private void initializeSuccessfulRegistry() {
 		when(this.appRegistry.find(anyString(), any(ApplicationType.class)))
 				.thenReturn(new AppRegistration("some-name", task, URI.create("http://helloworld")));
+		when(this.appRegistry.getAppResource(any())).thenReturn(mock(Resource.class));
+		when(this.appRegistry.getAppMetadataResource(any())).thenReturn(null);
 	}
 
 	private void initializeFailRegistry() throws IllegalArgumentException{

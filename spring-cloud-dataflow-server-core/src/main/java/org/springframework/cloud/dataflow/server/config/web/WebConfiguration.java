@@ -74,14 +74,14 @@ public class WebConfiguration implements ServletContextInitializer, ApplicationL
 	private String dataSourceUrl;
 
 	@Value("${spring.dataflow.embedded.database.enabled:false}")
-	private boolean databaseEnabled;
+	private boolean embeddedDatabasedEnabled;
 
 	private Server server = null;
 
 	public Server initH2TCPServer() {
 		logger.info("Starting H2 Server with URL: " + dataSourceUrl);
 		try {
-			server = Server.createTcpServer("-tcp", "-tcpAllowOthers", "-tcpPort", getH2Port(dataSourceUrl))
+			this.server = Server.createTcpServer("-tcp", "-tcpAllowOthers", "-tcpPort", getH2Port(dataSourceUrl))
 					.start();
 		}
 		catch (SQLException e) {
@@ -98,7 +98,7 @@ public class WebConfiguration implements ServletContextInitializer, ApplicationL
 
 	@Override
 	public void onStartup(ServletContext servletContext) {
-		if (this.databaseEnabled && StringUtils.hasText(dataSourceUrl)
+		if (this.embeddedDatabasedEnabled && StringUtils.hasText(dataSourceUrl)
 				&& dataSourceUrl.startsWith("jdbc:h2:tcp://localhost:")) {
 			logger.info("Start Embedded H2");
 			initH2TCPServer();
@@ -181,8 +181,8 @@ public class WebConfiguration implements ServletContextInitializer, ApplicationL
 
 	@Override
 	public void onApplicationEvent(ContextClosedEvent event) {
-		if (server != null) {
-			server.stop();
+		if (this.server != null) {
+			this.server.stop();
 			logger.info("Embedded H2 server stopped!");
 		}
 	}
