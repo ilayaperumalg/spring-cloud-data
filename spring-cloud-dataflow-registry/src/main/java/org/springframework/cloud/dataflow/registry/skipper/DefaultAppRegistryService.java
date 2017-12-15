@@ -90,9 +90,15 @@ public class DefaultAppRegistryService implements AppRegistryService {
 				appRegistration.getMetadataUri().toString()) : null;
 	}
 
+	@Override
 	public Resource getAppResource(AppRegistration appRegistration) {
 		return this.resourceLoader.getResource(appRegistration.getUri().toString());
 	}
+
+
+	public Resource getResource(String uri) {
+        return (uri == null)? null: this.resourceLoader.getResource(uri);
+    }
 
 	@Override
 	public AppRegistration find(String name, ApplicationType type) {
@@ -111,6 +117,13 @@ public class DefaultAppRegistryService implements AppRegistryService {
 
 	@Override
 	public void setDefaultApp(String name, ApplicationType type, String version) {
+		AppRegistration oldDefault = this.appRegistrationRepository
+				.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
+		if (oldDefault != null) {
+			oldDefault.setDefaultVersion(false);
+			this.appRegistrationRepository.save(oldDefault);
+		}
+
 		AppRegistration newDefault = this.appRegistrationRepository
 				.findAppRegistrationByNameAndTypeAndVersion(name,
 						type, version);
@@ -121,12 +134,6 @@ public class DefaultAppRegistryService implements AppRegistryService {
 
 		newDefault.setDefaultVersion(true);
 
-		AppRegistration oldDefault = this.appRegistrationRepository
-				.findAppRegistrationByNameAndTypeAndDefaultVersionIsTrue(name, type);
-		if (oldDefault != null) {
-			oldDefault.setDefaultVersion(false);
-			this.appRegistrationRepository.save(oldDefault);
-		}
 		this.appRegistrationRepository.save(newDefault);
 	}
 

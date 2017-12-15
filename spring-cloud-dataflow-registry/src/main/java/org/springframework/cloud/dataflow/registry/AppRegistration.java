@@ -64,7 +64,7 @@ public class AppRegistration extends AbstractEntity implements Comparable<AppReg
 	 * Is current default app version for a given (name, type) combination. Only one default
 	 * per (name, type) pair is allowed
 	 */
-	private Boolean defaultVersion;
+	private Boolean defaultVersion = false;
 
 	public AppRegistration() {
 	}

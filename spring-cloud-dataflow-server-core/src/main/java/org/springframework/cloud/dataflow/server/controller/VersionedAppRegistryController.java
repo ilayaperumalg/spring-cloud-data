@@ -35,7 +35,9 @@ import org.springframework.cloud.dataflow.registry.skipper.DefaultAppRegistrySer
 import org.springframework.cloud.dataflow.registry.support.NoSuchAppRegistrationException;
 import org.springframework.cloud.dataflow.rest.resource.AppRegistrationResource;
 import org.springframework.cloud.dataflow.rest.resource.DetailedAppRegistrationResource;
+import org.springframework.cloud.dataflow.server.support.ResourceUtils;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -75,7 +77,8 @@ public class VersionedAppRegistryController {
 
 	private ForkJoinPool forkJoinPool;
 
-	public VersionedAppRegistryController(AppRegistryService appRegistryService, ApplicationConfigurationMetadataResolver metadataResolver,
+	public VersionedAppRegistryController(AppRegistryService appRegistryService,
+			ApplicationConfigurationMetadataResolver metadataResolver,
 			ForkJoinPool forkJoinPool) {
 		this.appRegistryService = appRegistryService;
 		this.metadataResolver = metadataResolver;
@@ -205,8 +208,10 @@ public class VersionedAppRegistryController {
 	public void register(@PathVariable("type") ApplicationType type, @PathVariable("name") String name,
 			@RequestParam("uri") String uri, @RequestParam(name = "metadata-uri", required = false) String metadataUri,
 			@RequestParam(value = "force", defaultValue = "false") boolean force) {
-		String defaultVersion = appRegistryService.getDefaultApp(name, type).getVersion();
-		this.register(type, name, defaultVersion, uri, metadataUri, force);
+
+		Resource resource = this.appRegistryService.getResource(uri);
+		String version = ResourceUtils.getResourceVersion(resource);
+		this.register(type, name, version, uri, metadataUri, force);
 	}
 
 	/**

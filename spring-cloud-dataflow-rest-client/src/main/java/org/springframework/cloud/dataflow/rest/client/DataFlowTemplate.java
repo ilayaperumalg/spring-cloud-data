@@ -208,7 +208,7 @@ public class DataFlowTemplate implements DataFlowOperations {
 				this.taskOperations = null;
 				this.jobOperations = null;
 			}
-			this.appRegistryOperations = new AppRegistryTemplate2(restTemplate, resourceSupport);
+			this.appRegistryOperations = new AppRegistryTemplate(restTemplate, resourceSupport);
 			this.completionOperations = new CompletionTemplate(restTemplate,
 					resourceSupport.getLink("completions/stream"), resourceSupport.getLink("completions/task"));
 		}

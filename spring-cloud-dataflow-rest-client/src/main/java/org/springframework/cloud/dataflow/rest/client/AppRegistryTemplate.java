@@ -117,4 +117,35 @@ public class AppRegistryTemplate implements AppRegistryOperations {
 		values.add("force", Boolean.toString(force));
 		return restTemplate.postForObject(uriTemplate.toString(), values, AppRegistrationResource.Page.class);
 	}
+
+	@Override
+	public void unregister(String name, ApplicationType applicationType, String version) {
+		String uri = uriTemplate.toString() + "/{type}/{name}/{version}";
+		restTemplate.delete(uri, applicationType.name(), name, version);
+	}
+
+	@Override
+	public DetailedAppRegistrationResource info(String name, ApplicationType type, String version) {
+		String uri = uriTemplate.toString() + "/{type}/{name}/{version}";
+		return restTemplate.getForObject(uri, DetailedAppRegistrationResource.class, type, name, version);
+	}
+
+	@Override
+	public AppRegistrationResource register(String name, ApplicationType type, String version, String uri,
+			String metadataUri, boolean force) {
+		MultiValueMap<String, Object> values = new LinkedMultiValueMap<String, Object>();
+		values.add("uri", uri);
+		if (metadataUri != null) {
+			values.add("metadata-uri", metadataUri);
+		}
+		values.add("force", Boolean.toString(force));
+
+		return restTemplate.postForObject(uriTemplate.toString() + "/{type}/{name}/{version}", values,
+				AppRegistrationResource.class, type, name, version);
+	}
+
+	@Override
+	public void makeDefault(String name, ApplicationType type, String version) {
+		restTemplate.put(uriTemplate.toString() + "/{type}/{name}/{version}", null, type, name, version);
+	}
 }

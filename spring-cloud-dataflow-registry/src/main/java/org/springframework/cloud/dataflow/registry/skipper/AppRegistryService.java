@@ -28,5 +28,7 @@ public interface AppRegistryService extends AppRegistryCommon {
 
 	List<AppRegistration> importAll(boolean overwrite, Resource... resources);
 
+	Resource getResource(String uri);
+
 	ResourceLoader getResourceLoader();
 }
