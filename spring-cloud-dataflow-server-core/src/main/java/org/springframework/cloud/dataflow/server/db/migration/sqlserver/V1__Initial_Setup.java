@@ -69,6 +69,17 @@ public class V1__Initial_Setup extends AbstractInitialSetupMigration {
 			"  primary key (definition_name)\n" +
 			")";
 
+	public final static String CREATE_TASK_DEPLOYMENT_TABLE =
+			"create table task_deployment (\n" +
+					"  id bigint not null,\n" +
+					"  object_version bigint,\n" +
+					"  task_deployment_id varchar(255) not null,\n" +
+					"  task_definition_name varchar(255) not null,\n" +
+					"  platform_name varchar(255) not null,\n" +
+					"  created_on datetime,\n" +
+					"  primary key (id)\n" +
+					");";
+
 	public final static String CREATE_TASK_EXECUTION_TABLE =
 			"CREATE TABLE TASK_EXECUTION (\n" +
 			"  TASK_EXECUTION_ID BIGINT NOT NULL PRIMARY KEY,\n" +
@@ -219,7 +230,8 @@ public class V1__Initial_Setup extends AbstractInitialSetupMigration {
 
 	@Override
 	public List<SqlCommand> createTaskDeploymentTable() {
-		return null;
+		return Arrays.asList(
+				SqlCommand.from(CREATE_TASK_DEPLOYMENT_TABLE));
 	}
 
 	@Override
