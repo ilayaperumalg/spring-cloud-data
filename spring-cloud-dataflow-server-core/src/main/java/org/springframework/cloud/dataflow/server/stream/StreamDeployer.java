@@ -88,7 +88,7 @@ public interface StreamDeployer {
 	 * @param streamName the stream name
 	 * @return the logs content
 	 */
-	String getLog(String streamName);
+	Map<String, String> getLog(String streamName);
 
 	/**
 	 * Returns the logs of a specific application in the stream identified by the stream name.
@@ -97,5 +97,5 @@ public interface StreamDeployer {
 	 * @param appName specific application name inside the stream
 	 * @return the logs content
 	 */
-	String getLog(String streamName, String appName);
+	Map<String, String> getLog(String streamName, String appName);
 }

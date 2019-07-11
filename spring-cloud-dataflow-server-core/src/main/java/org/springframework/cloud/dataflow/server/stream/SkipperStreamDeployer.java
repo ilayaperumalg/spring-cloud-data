@@ -489,12 +489,12 @@ public class SkipperStreamDeployer implements StreamDeployer {
 	}
 
 	@Override
-	public String getLog(String streamName) {
+	public Map<String, String> getLog(String streamName) {
 		return this.skipperClient.getLog(streamName);
 	}
 
 	@Override
-	public String getLog(String streamName, String appName) {
+	public Map<String, String> getLog(String streamName, String appName) {
 		return this.skipperClient.getLog(streamName, appName);
 	}
 

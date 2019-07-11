@@ -16,6 +16,8 @@
 
 package org.springframework.cloud.dataflow.server.controller;
 
+import java.util.Collections;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -79,12 +81,12 @@ public class StreamLogsControllerTests {
 
 	@Test
 	public void testGetLogs() throws Exception {
-		when(this.skipperClient.getLog("ticktock4")).thenReturn("Logs");
+		when(this.skipperClient.getLog("ticktock4")).thenReturn(Collections.emptyMap());
 		mockMvc.perform(
 				get("/streams/logs/ticktock4").accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk());
-		when(this.skipperClient.getLog("ticktock4", "myapp")).thenReturn("Logs");
+		when(this.skipperClient.getLog("ticktock4", "myapp")).thenReturn(Collections.EMPTY_MAP);
 		mockMvc.perform(
 				get("/streams/logs/ticktock4/myapp").accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
