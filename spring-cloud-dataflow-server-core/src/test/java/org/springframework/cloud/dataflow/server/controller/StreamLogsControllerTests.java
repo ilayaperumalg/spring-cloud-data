@@ -32,6 +32,7 @@ import org.springframework.cloud.dataflow.registry.repository.AppRegistrationRep
 import org.springframework.cloud.dataflow.server.configuration.TestDependencies;
 import org.springframework.cloud.dataflow.server.repository.StreamDefinitionRepository;
 import org.springframework.cloud.skipper.client.SkipperClient;
+import org.springframework.cloud.skipper.domain.LogInfo;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
@@ -81,12 +82,12 @@ public class StreamLogsControllerTests {
 
 	@Test
 	public void testGetLogs() throws Exception {
-		when(this.skipperClient.getLog("ticktock4")).thenReturn(Collections.emptyMap());
+		when(this.skipperClient.getLog("ticktock4")).thenReturn(new LogInfo(Collections.emptyMap()));
 		mockMvc.perform(
 				get("/streams/logs/ticktock4").accept(MediaType.APPLICATION_JSON))
 				.andDo(print())
 				.andExpect(status().isOk());
-		when(this.skipperClient.getLog("ticktock4", "myapp")).thenReturn(Collections.EMPTY_MAP);
+		when(this.skipperClient.getLog("ticktock4", "myapp")).thenReturn(new LogInfo(Collections.EMPTY_MAP));
 		mockMvc.perform(
 				get("/streams/logs/ticktock4/myapp").accept(MediaType.APPLICATION_JSON))
 				.andDo(print())

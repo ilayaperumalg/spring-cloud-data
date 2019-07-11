@@ -16,8 +16,8 @@
 
 package org.springframework.cloud.dataflow.server.controller;
 
-import org.springframework.cloud.dataflow.rest.resource.StreamLogResource;
 import org.springframework.cloud.dataflow.server.stream.StreamDeployer;
+import org.springframework.cloud.skipper.domain.LogInfo;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,12 +46,12 @@ public class StreamLogsController {
 	}
 
 	@RequestMapping("{streamName}")
-	public StreamLogResource getLog(@PathVariable String streamName) {
-		return new StreamLogResource(this.streamDeployer.getLog(streamName));
+	public LogInfo getLog(@PathVariable String streamName) {
+		return this.streamDeployer.getLog(streamName);
 	}
 
 	@RequestMapping("{streamName}/{appName}")
-	public StreamLogResource getLog(@PathVariable String streamName, @PathVariable String appName) {
-		return new StreamLogResource(this.streamDeployer.getLog(streamName, appName));
+	public LogInfo getLog(@PathVariable String streamName, @PathVariable String appName) {
+		return this.streamDeployer.getLog(streamName, appName);
 	}
 }
