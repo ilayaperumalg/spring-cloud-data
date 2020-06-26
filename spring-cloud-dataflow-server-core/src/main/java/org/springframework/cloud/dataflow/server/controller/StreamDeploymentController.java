@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.cloud.dataflow.core.StreamDefinition;
 import org.springframework.cloud.dataflow.core.StreamDefinitionService;
-import org.springframework.cloud.dataflow.core.StreamDefinitionServiceUtils;
 import org.springframework.cloud.dataflow.core.StreamDeployment;
 import org.springframework.cloud.dataflow.rest.UpdateStreamRequest;
 import org.springframework.cloud.dataflow.rest.resource.DeploymentStateResource;
@@ -196,7 +195,7 @@ public class StreamDeploymentController {
 			final DeploymentStateResource deploymentStateResource = ControllerUtils.mapState(deploymentState);
 			status = deploymentStateResource.getKey();
 		}
-		return new Assembler(streamDefinition.getDslText(), streamDefinition.getDescription(), status)
+		return new Assembler(streamDefinition.getOriginalDslText(), streamDefinition.getDescription(), status)
 				.toModel(streamDeployment);
 	}
 
@@ -250,10 +249,8 @@ public class StreamDeploymentController {
 			if (StringUtils.hasText(streamDeployment.getDeploymentProperties()) && canDisplayDeploymentProperties()) {
 				deploymentProperties = streamDeployment.getDeploymentProperties();
 			}
-			StreamDefinition streamDefinition = new StreamDefinition(streamDeployment.getStreamName(), this.dslText);
-			return new StreamDeploymentResource(streamDeployment.getStreamName(),
-					StreamDefinitionServiceUtils.sanitizeStreamDefinition(streamDefinition.getName(),
-							streamDefinitionService.getAppDefinitions(streamDefinition)),
+				return new StreamDeploymentResource(streamDeployment.getStreamName(),
+					streamDefinitionService.redactDsl(new StreamDefinition(streamDeployment.getStreamName(), this.dslText)),
 					this.description,
 					deploymentProperties, this.status);
 		}

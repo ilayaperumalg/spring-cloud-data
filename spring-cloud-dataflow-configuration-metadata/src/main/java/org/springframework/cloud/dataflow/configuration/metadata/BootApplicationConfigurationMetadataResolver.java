@@ -79,11 +79,15 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 
 	private static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
+	private static final String CONFIGURATION_PROPERTIES_PORTS = "configuration-properties.ports";
+
 	private static final String CONTAINER_IMAGE_CONFIGURATION_METADATA_LABEL_NAME = "org.springframework.cloud.dataflow.spring-configuration-metadata.json";
 
 	private final Set<String> globalWhiteListedProperties = new HashSet<>();
 
 	private final Set<String> globalWhiteListedClasses = new HashSet<>();
+
+	private final Set<String> globalWhiteListedPorts = new HashSet<>();
 
 	private final ClassLoader parent;
 
@@ -106,8 +110,8 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 			Resource[] globalResources = new PathMatchingResourcePatternResolver(
 					ApplicationConfigurationMetadataResolver.class.getClassLoader())
 					.getResources(WHITELIST_PROPERTIES);
-			loadWhiteLists(concatArrays(globalLegacyResources, globalResources), globalWhiteListedClasses,
-					globalWhiteListedProperties);
+			loadWhiteLists(concatArrays(globalLegacyResources, globalResources), this.globalWhiteListedClasses,
+					this.globalWhiteListedProperties, this.globalWhiteListedPorts);
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Error reading global white list of configuration properties", e);
@@ -184,14 +188,15 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 		try (URLClassLoader moduleClassLoader = new BootClassLoaderFactory(archive, parent).createClassLoader()) {
 			List<ConfigurationMetadataProperty> result = new ArrayList<>();
 			ResourcePatternResolver moduleResourceLoader = new PathMatchingResourcePatternResolver(moduleClassLoader);
-			Collection<String> whiteListedClasses = new HashSet<>(globalWhiteListedClasses);
-			Collection<String> whiteListedProperties = new HashSet<>(globalWhiteListedProperties);
+			Collection<String> whiteListedClasses = new HashSet<>(this.globalWhiteListedClasses);
+			Collection<String> whiteListedProperties = new HashSet<>(this.globalWhiteListedProperties);
+			Collection<String> whitedListedPorts = new HashSet<>(this.globalWhiteListedPorts);
 
 			// read both formats and concat
 			Resource[] whitelistLegacyDescriptors = moduleResourceLoader.getResources(WHITELIST_LEGACY_PROPERTIES);
 			Resource[] whitelistDescriptors = moduleResourceLoader.getResources(WHITELIST_PROPERTIES);
 			loadWhiteLists(concatArrays(whitelistLegacyDescriptors, whitelistDescriptors), whiteListedClasses,
-					whiteListedProperties);
+					whiteListedProperties, whitedListedPorts);
 
 			ConfigurationMetadataRepositoryJsonBuilder builder = ConfigurationMetadataRepositoryJsonBuilder.create();
 			for (Resource r : moduleResourceLoader.getResources(CONFIGURATION_METADATA_PATTERN)) {
@@ -214,11 +219,21 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 								result.add(property);
 							}
 						}
+						else if (isWhiteListed(property, whitedListedPorts)) {
+							if (!isDeprecatedError(property)) {
+								result.add(property);
+							}
+						}
 					}
 				}
 				else { // Look for per property WL
 					for (ConfigurationMetadataProperty property : group.getProperties().values()) {
 						if (isWhiteListed(property, whiteListedProperties)) {
+							if (!isDeprecatedError(property)) {
+								result.add(property);
+							}
+						}
+						else if (isWhiteListed(property, whitedListedPorts)) {
 							if (!isDeprecatedError(property)) {
 								result.add(property);
 							}
@@ -253,7 +268,7 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 	 * Loads white lists of properties and group classes and add them to the given
 	 * collections.
 	 */
-	private void loadWhiteLists(Resource[] resources, Collection<String> classes, Collection<String> names)
+	private void loadWhiteLists(Resource[] resources, Collection<String> classes, Collection<String> names, Collection<String> ports)
 			throws IOException {
 		for (Resource resource : resources) {
 			Properties properties = new Properties();
@@ -262,6 +277,8 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), ",", " ")));
 			names.addAll(Arrays.asList(StringUtils
 					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), ",", " ")));
+			ports.addAll(Arrays.asList(StringUtils
+					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_PORTS), ",", " ")));
 		}
 	}
 

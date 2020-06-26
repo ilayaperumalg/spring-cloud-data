@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.cloud.dataflow.core.StreamDefinition;
 import org.springframework.cloud.dataflow.core.StreamDefinitionService;
-import org.springframework.cloud.dataflow.core.StreamDefinitionServiceUtils;
 import org.springframework.cloud.dataflow.rest.resource.DeploymentStateResource;
 import org.springframework.cloud.dataflow.rest.resource.StreamDefinitionResource;
 import org.springframework.cloud.dataflow.server.controller.support.ControllerUtils;
@@ -212,12 +211,9 @@ public class StreamDefinitionController {
 
 		@Override
 		public StreamDefinitionResource instantiateModel(StreamDefinition streamDefinition) {
-			final StreamDefinition originalStreamDefinition = new StreamDefinition(streamDefinition.getName(), streamDefinition.getOriginalDslText());
 			final StreamDefinitionResource resource = new StreamDefinitionResource(streamDefinition.getName(),
-					StreamDefinitionServiceUtils.sanitizeStreamDefinition(streamDefinition.getName(),
-							streamDefinitionService.getAppDefinitions(streamDefinition)),
-					StreamDefinitionServiceUtils.sanitizeStreamDefinition(originalStreamDefinition.getName(),
-							streamDefinitionService.getAppDefinitions(originalStreamDefinition)), originalStreamDefinition.getDescription());
+					streamDefinitionService.redactDsl(streamDefinition),
+					streamDefinition.getOriginalDslText(), streamDefinition.getDescription());
 			DeploymentState deploymentState = streamDeploymentStates.get(streamDefinition);
 			if (deploymentState != null) {
 				final DeploymentStateResource deploymentStateResource = ControllerUtils
