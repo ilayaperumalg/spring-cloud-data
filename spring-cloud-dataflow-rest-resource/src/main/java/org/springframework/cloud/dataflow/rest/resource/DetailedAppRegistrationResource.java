@@ -45,8 +45,15 @@ public class DetailedAppRegistrationResource extends AppRegistrationResource {
 	 */
 	private String shortDescription;
 
+	/**
+	 * Inbound port names configured for the app.
+	 */
+	private final Set<String> inboundPortNames = new HashSet<>();
 
-	private final Set<String> portNames = new HashSet<>();
+	/**
+	 * Outbound port names configured for the app.
+	 */
+	private final Set<String> outboundPortNames = new HashSet<>();
 
 	/**
 	 * Default constructor for serialization frameworks.
@@ -97,21 +104,40 @@ public class DetailedAppRegistrationResource extends AppRegistrationResource {
 	}
 
 	/**
-	 * Add application's inbound/outbound port name.
+	 * Add application's inbound port name.
 	 *
-	 * @param portName application option to add
+	 * @param inboundPortName application's inbound port name to add
 	 */
-	public void addPortName(String portName) {
-		this.portNames.add(portName);
+	public void addInboundPortName(String inboundPortName) {
+		this.inboundPortNames.add(inboundPortName);
 	}
 
 	/**
-	 * Return a list of application's inbound/outbound port names.
+	 * Add application's outbound port name.
 	 *
-	 * @return list of application inbound/outbound port names.
+	 * @param outboundPortName application's outbound port name to add
 	 */
-	public Set<String> getPortNames() {
-		return this.portNames;
+	public void addOutboundPortName(String outboundPortName) {
+		this.outboundPortNames.add(outboundPortName);
+	}
+
+	/**
+	 * Return a set of application's inbound port names.
+	 *
+	 * @return set of application's inbound port names.
+	 */
+	public Set<String> getInboundPortNames() {
+		return this.inboundPortNames;
+	}
+
+
+	/**
+	 * Return a set of application's outbound port names.
+	 *
+	 * @return set of application's outbound port names.
+	 */
+	public Set<String> getOutboundPortNames() {
+		return this.outboundPortNames;
 	}
 
 

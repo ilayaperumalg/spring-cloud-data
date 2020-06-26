@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -79,15 +80,15 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 
 	private static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
-	private static final String CONFIGURATION_PROPERTIES_PORTS = "configuration-properties.ports";
+	private static final String CONFIGURATION_PROPERTIES_INBOUND_PORTS = "configuration-properties.inbound-ports";
+
+	private static final String CONFIGURATION_PROPERTIES_OUTBOUND_PORTS = "configuration-properties.outbound-ports";
 
 	private static final String CONTAINER_IMAGE_CONFIGURATION_METADATA_LABEL_NAME = "org.springframework.cloud.dataflow.spring-configuration-metadata.json";
 
 	private final Set<String> globalWhiteListedProperties = new HashSet<>();
 
 	private final Set<String> globalWhiteListedClasses = new HashSet<>();
-
-	private final Set<String> globalWhiteListedPorts = new HashSet<>();
 
 	private final ClassLoader parent;
 
@@ -111,7 +112,7 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 					ApplicationConfigurationMetadataResolver.class.getClassLoader())
 					.getResources(WHITELIST_PROPERTIES);
 			loadWhiteLists(concatArrays(globalLegacyResources, globalResources), this.globalWhiteListedClasses,
-					this.globalWhiteListedProperties, this.globalWhiteListedPorts);
+					this.globalWhiteListedProperties);
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Error reading global white list of configuration properties", e);
@@ -152,7 +153,8 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 	}
 
 	@Override
-	public Set<String> listPortNames(Resource app) {
+	public Map<String, Set<String>> listPortNames(Resource app) {
+		Map<String, Set<String>> portNamesMap = new HashMap<>();
 		try {
 			if (app != null) {
 				if (isDockerSchema(app.getURI())) {
@@ -166,10 +168,10 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 		}
 		catch (Exception e) {
 			logger.warn("Failed to retrieve properties for resource:" + app, e);
-			return Collections.emptySet();
+			return Collections.emptyMap();
 		}
 
-		return Collections.emptySet();
+		return Collections.emptyMap();
 	}
 
 	private boolean isDockerSchema(URI uri) {
@@ -205,22 +207,22 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 		}
 	}
 
-	private Set<String> resolvePortNamesFromContainerImage(URI imageUri) {
+	private Map<String, Set<String>> resolvePortNamesFromContainerImage(URI imageUri) {
 		String imageName = imageUri.getSchemeSpecificPart();
-
+		Map<String, Set<String>> portsMap = new HashMap<>();
 		Map<String, String> labels = this.containerImageMetadataResolver.getImageLabels(imageName);
 		if (CollectionUtils.isEmpty(labels)) {
-			return Collections.emptySet();
+			return Collections.emptyMap();
 		}
 
 		String encodedMetadata = labels.get(CONTAINER_IMAGE_CONFIGURATION_METADATA_LABEL_NAME);
 		if (!StringUtils.hasText(encodedMetadata)) {
-			return Collections.emptySet();
+			return Collections.emptyMap();
 		}
 
 		try {
 			//todo:
-			return Collections.emptySet();
+			return portsMap;
 		}
 		catch (Exception e) {
 			throw new AppMetadataResolutionException("Invalid Metadata for " + imageName);
@@ -233,13 +235,12 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 			ResourcePatternResolver moduleResourceLoader = new PathMatchingResourcePatternResolver(moduleClassLoader);
 			Collection<String> whiteListedClasses = new HashSet<>(this.globalWhiteListedClasses);
 			Collection<String> whiteListedProperties = new HashSet<>(this.globalWhiteListedProperties);
-			Collection<String> whitedListedPorts = new HashSet<>(this.globalWhiteListedPorts);
 
 			// read both formats and concat
 			Resource[] whitelistLegacyDescriptors = moduleResourceLoader.getResources(WHITELIST_LEGACY_PROPERTIES);
 			Resource[] whitelistDescriptors = moduleResourceLoader.getResources(WHITELIST_PROPERTIES);
 			loadWhiteLists(concatArrays(whitelistLegacyDescriptors, whitelistDescriptors), whiteListedClasses,
-					whiteListedProperties, whitedListedPorts);
+					whiteListedProperties);
 
 			ConfigurationMetadataRepositoryJsonBuilder builder = ConfigurationMetadataRepositoryJsonBuilder.create();
 			for (Resource r : moduleResourceLoader.getResources(CONFIGURATION_METADATA_PATTERN)) {
@@ -258,11 +259,6 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 				else if ("_ROOT_GROUP_".equals(group.getId())) {
 					for (ConfigurationMetadataProperty property : group.getProperties().values()) {
 						if (isWhiteListed(property, whiteListedProperties)) {
-							if (!isDeprecatedError(property)) {
-								result.add(property);
-							}
-						}
-						else if (isWhiteListed(property, whitedListedPorts)) {
 							if (!isDeprecatedError(property)) {
 								result.add(property);
 							}
@@ -287,12 +283,13 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 		}
 	}
 
-	public Set<String> listPortNames(Archive archive) {
+	public Map<String, Set<String>> listPortNames(Archive archive) {
 		try (URLClassLoader moduleClassLoader = new BootClassLoaderFactory(archive, parent).createClassLoader()) {
 			List<ConfigurationMetadataProperty> result = new ArrayList<>();
 			ResourcePatternResolver moduleResourceLoader = new PathMatchingResourcePatternResolver(moduleClassLoader);
-			Set<String> whitedListedPorts = new HashSet<>(this.globalWhiteListedPorts);
-
+			Set<String> inboundPorts = new HashSet<>();
+			Set<String> outboundPorts = new HashSet<>();
+			Map<String, Set<String>> portsMap = new HashMap<>();
 			// read both formats and concat
 			Resource[] whitelistLegacyDescriptors = moduleResourceLoader.getResources(WHITELIST_LEGACY_PROPERTIES);
 			Resource[] whitelistDescriptors = moduleResourceLoader.getResources(WHITELIST_PROPERTIES);
@@ -300,10 +297,14 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 			for (Resource resource : concatArrays(whitelistLegacyDescriptors, whitelistDescriptors)) {
 				Properties properties = new Properties();
 				properties.load(resource.getInputStream());
-				whitedListedPorts.addAll(Arrays.asList(StringUtils
-						.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_PORTS), ",", " ")));
+				inboundPorts.addAll(Arrays.asList(StringUtils
+						.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_INBOUND_PORTS), ",", " ")));
+				portsMap.put("inbound", inboundPorts);
+				outboundPorts.addAll(Arrays.asList(StringUtils
+						.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS), ",", " ")));
+				portsMap.put("outbound", outboundPorts);
 			}
-			return whitedListedPorts;
+			return portsMap;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Exception trying to list configuration properties for application " + archive,
@@ -330,7 +331,7 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 	 * Loads white lists of properties and group classes and add them to the given
 	 * collections.
 	 */
-	private void loadWhiteLists(Resource[] resources, Collection<String> classes, Collection<String> names, Collection<String> ports)
+	private void loadWhiteLists(Resource[] resources, Collection<String> classes, Collection<String> names)
 			throws IOException {
 		for (Resource resource : resources) {
 			Properties properties = new Properties();
@@ -339,8 +340,6 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), ",", " ")));
 			names.addAll(Arrays.asList(StringUtils
 					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), ",", " ")));
-			ports.addAll(Arrays.asList(StringUtils
-					.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_PORTS), ",", " ")));
 		}
 	}
 
