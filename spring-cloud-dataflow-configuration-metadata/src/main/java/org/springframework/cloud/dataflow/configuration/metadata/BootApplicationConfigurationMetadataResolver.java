@@ -151,6 +151,27 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 		return Collections.emptyList();
 	}
 
+	@Override
+	public Set<String> listPortNames(Resource app) {
+		try {
+			if (app != null) {
+				if (isDockerSchema(app.getURI())) {
+					return resolvePortNamesFromContainerImage(app.getURI());
+				}
+				else {
+					Archive archive = resolveAsArchive(app);
+					return listPortNames(archive);
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.warn("Failed to retrieve properties for resource:" + app, e);
+			return Collections.emptySet();
+		}
+
+		return Collections.emptySet();
+	}
+
 	private boolean isDockerSchema(URI uri) {
 		return uri != null && uri.getScheme() != null && uri.getScheme().contains("docker");
 	}
@@ -178,6 +199,28 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 					.map(e -> e.getValue())
 					.collect(Collectors.toList());
 			return result;
+		}
+		catch (Exception e) {
+			throw new AppMetadataResolutionException("Invalid Metadata for " + imageName);
+		}
+	}
+
+	private Set<String> resolvePortNamesFromContainerImage(URI imageUri) {
+		String imageName = imageUri.getSchemeSpecificPart();
+
+		Map<String, String> labels = this.containerImageMetadataResolver.getImageLabels(imageName);
+		if (CollectionUtils.isEmpty(labels)) {
+			return Collections.emptySet();
+		}
+
+		String encodedMetadata = labels.get(CONTAINER_IMAGE_CONFIGURATION_METADATA_LABEL_NAME);
+		if (!StringUtils.hasText(encodedMetadata)) {
+			return Collections.emptySet();
+		}
+
+		try {
+			//todo:
+			return Collections.emptySet();
 		}
 		catch (Exception e) {
 			throw new AppMetadataResolutionException("Invalid Metadata for " + imageName);
@@ -233,15 +276,34 @@ public class BootApplicationConfigurationMetadataResolver extends ApplicationCon
 								result.add(property);
 							}
 						}
-						else if (isWhiteListed(property, whitedListedPorts)) {
-							if (!isDeprecatedError(property)) {
-								result.add(property);
-							}
-						}
 					}
 				}
 			}
 			return result;
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Exception trying to list configuration properties for application " + archive,
+					e);
+		}
+	}
+
+	public Set<String> listPortNames(Archive archive) {
+		try (URLClassLoader moduleClassLoader = new BootClassLoaderFactory(archive, parent).createClassLoader()) {
+			List<ConfigurationMetadataProperty> result = new ArrayList<>();
+			ResourcePatternResolver moduleResourceLoader = new PathMatchingResourcePatternResolver(moduleClassLoader);
+			Set<String> whitedListedPorts = new HashSet<>(this.globalWhiteListedPorts);
+
+			// read both formats and concat
+			Resource[] whitelistLegacyDescriptors = moduleResourceLoader.getResources(WHITELIST_LEGACY_PROPERTIES);
+			Resource[] whitelistDescriptors = moduleResourceLoader.getResources(WHITELIST_PROPERTIES);
+
+			for (Resource resource : concatArrays(whitelistLegacyDescriptors, whitelistDescriptors)) {
+				Properties properties = new Properties();
+				properties.load(resource.getInputStream());
+				whitedListedPorts.addAll(Arrays.asList(StringUtils
+						.delimitedListToStringArray(properties.getProperty(CONFIGURATION_PROPERTIES_PORTS), ",", " ")));
+			}
+			return whitedListedPorts;
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Exception trying to list configuration properties for application " + archive,

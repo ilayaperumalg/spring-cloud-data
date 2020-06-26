@@ -17,7 +17,9 @@
 package org.springframework.cloud.dataflow.rest.resource;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.boot.configurationmetadata.ConfigurationMetadataProperty;
 import org.springframework.hateoas.PagedModel;
@@ -42,6 +44,9 @@ public class DetailedAppRegistrationResource extends AppRegistrationResource {
 	 * Optional short description of the application.
 	 */
 	private String shortDescription;
+
+
+	private final Set<String> portNames = new HashSet<>();
 
 	/**
 	 * Default constructor for serialization frameworks.
@@ -90,6 +95,25 @@ public class DetailedAppRegistrationResource extends AppRegistrationResource {
 	public List<ConfigurationMetadataProperty> getOptions() {
 		return options;
 	}
+
+	/**
+	 * Add application's inbound/outbound port name.
+	 *
+	 * @param portName application option to add
+	 */
+	public void addPortName(String portName) {
+		this.portNames.add(portName);
+	}
+
+	/**
+	 * Return a list of application's inbound/outbound port names.
+	 *
+	 * @return list of application inbound/outbound port names.
+	 */
+	public Set<String> getPortNames() {
+		return this.portNames;
+	}
+
 
 	/**
 	 * Return a description for this application.

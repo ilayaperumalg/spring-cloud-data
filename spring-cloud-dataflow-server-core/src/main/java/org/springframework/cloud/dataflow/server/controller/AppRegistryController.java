@@ -189,6 +189,9 @@ public class AppRegistryController {
 		for (ConfigurationMetadataProperty property : properties) {
 			result.addOption(property);
 		}
+		for (String portName: this.metadataResolver.listPortNames(appRegistryService.getAppMetadataResource(registration))) {
+			result.addPortName(portName);
+		}
 		return result;
 	}
 
