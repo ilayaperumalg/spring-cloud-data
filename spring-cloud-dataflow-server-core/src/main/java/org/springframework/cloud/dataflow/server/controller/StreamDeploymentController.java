@@ -195,7 +195,7 @@ public class StreamDeploymentController {
 			final DeploymentStateResource deploymentStateResource = ControllerUtils.mapState(deploymentState);
 			status = deploymentStateResource.getKey();
 		}
-		return new Assembler(streamDefinition.getOriginalDslText(), streamDefinition.getDescription(), status)
+		return new Assembler(streamDefinition.getDslText(), streamDefinition.getDescription(), status)
 				.toModel(streamDeployment);
 	}
 
