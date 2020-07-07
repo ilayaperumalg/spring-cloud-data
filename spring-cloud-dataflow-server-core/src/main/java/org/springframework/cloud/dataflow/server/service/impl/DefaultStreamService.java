@@ -214,7 +214,7 @@ public class DefaultStreamService implements StreamService {
 		}
 
 		StreamDefinition updatedStreamDefinition = new StreamDefinition(streamName,
-				this.streamDefinitionService.constructDsl(updatedStreamAppDefinitions),
+				this.streamDefinitionService.constructDsl(streamDefinition.getDslText(), updatedStreamAppDefinitions),
 				streamDefinition.getOriginalDslText(), streamDefinition.getDescription());
 		logger.debug("Updated StreamDefinition: " + updatedStreamDefinition);
 

@@ -59,7 +59,7 @@ public class DefaultStreamDefinitionService implements StreamDefinitionService {
 		return appDefinitions;
 	}
 
-	public String constructDsl(LinkedList<StreamAppDefinition> streamAppDefinitions) {
+	public String constructDsl(String originalDslText, LinkedList<StreamAppDefinition> streamAppDefinitions) {
 		StringBuilder dslBuilder = new StringBuilder();
 
 		int appDefinitionIndex = 0;
@@ -116,9 +116,9 @@ public class DefaultStreamDefinitionService implements StreamDefinitionService {
 		return dsl;
 	}
 
-
+	@Override
 	public String redactDsl(StreamDefinition streamDefinition) {
-		return this.constructDsl(StreamDefinitionServiceUtils.sanitizeStreamAppDefinitions(this.getAppDefinitions(streamDefinition)));
+		return this.constructDsl(streamDefinition.getDslText(), StreamDefinitionServiceUtils.sanitizeStreamAppDefinitions(this.getAppDefinitions(streamDefinition)));
 	}
 
 	public static String unescape(String text) {

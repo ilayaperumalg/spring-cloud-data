@@ -63,7 +63,7 @@ public interface StreamDefinitionService {
 	 * @param streamAppDefinitions the linked list of {@link StreamAppDefinition}s associated with the stream with some of app properties modified
 	 * @return the updated stream DSL
 	 */
-	String constructDsl(LinkedList<StreamAppDefinition> streamAppDefinitions);
+	String constructDsl(String originalDslText, LinkedList<StreamAppDefinition> streamAppDefinitions);
 
 	String redactDsl(StreamDefinition streamDefinition);
 }

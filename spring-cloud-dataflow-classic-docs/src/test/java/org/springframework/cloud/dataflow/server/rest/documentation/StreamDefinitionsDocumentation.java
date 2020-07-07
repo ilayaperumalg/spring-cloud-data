@@ -116,23 +116,23 @@ public class StreamDefinitionsDocumentation extends BaseDocumentation {
 	@Test
 	public void getStreamDefinition() throws Exception {
 		this.mockMvc.perform(
-			get("/streams/definitions/{name}", "timelog"))
-			.andDo(print())
-			.andExpect(status().isOk())
-			.andDo(this.documentationHandler.document(
-				pathParameters(
-					parameterWithName("name").description("The name of the stream definition to query (required)")
-				),
-				responseFields(
-					fieldWithPath("name").description("The name of the stream definition"),
-					fieldWithPath("dslText").description("The DSL of the stream definition"),
-					fieldWithPath("originalDslText").description("The original DSL of the stream definition"),
-					fieldWithPath("status").description("The status of the stream definition"),
-					fieldWithPath("description").description("The description of the stream definition"),
-					fieldWithPath("statusDescription")
-							.description("The status description of the stream definition"),
-					subsectionWithPath("_links.self").description("Link to the stream definition resource")
-				)));
+				get("/streams/definitions/{name}", "timelog"))
+				.andDo(print())
+				.andExpect(status().isOk())
+				.andDo(this.documentationHandler.document(
+						pathParameters(
+								parameterWithName("name").description("The name of the stream definition to query (required)")
+						),
+						responseFields(
+								fieldWithPath("name").description("The name of the stream definition"),
+								fieldWithPath("dslText").description("The DSL of the stream definition"),
+								fieldWithPath("originalDslText").description("The original DSL of the stream definition"),
+								fieldWithPath("status").description("The status of the stream definition"),
+								fieldWithPath("description").description("The description of the stream definition"),
+								fieldWithPath("statusDescription")
+										.description("The status description of the stream definition"),
+								subsectionWithPath("_links.self").description("Link to the stream definition resource")
+						)));
 	}
 
 	@Test
