@@ -451,24 +451,25 @@ public class DataFlowControllerAutoConfiguration {
 					new AnnotationLinkRelationProvider(), CurieProvider.NONE, MessageResolver.DEFAULTS_ONLY, new HalConfiguration()));
 			objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-			if (properties.isSkipSslValidation()) {
-				//restTemplateBuilder.requestFactory(() -> org.springframework.cloud.dataflow.rest.util.HttpClientConfigurer
-				//		.create(URI.create(properties.getServerUri()))
-				//		.skipTlsCertificateVerification(true)
-				//		.buildClientHttpRequestFactory());
-				restTemplateBuilder.requestFactory(() -> HttpClientConfigurer.create()
-						.targetHost(URI.create(properties.getServerUri()))
-						.skipTlsCertificateVerification(true)
-						.buildClientHttpRequestFactory());
-				logger.info("Skipper Client - Skip SSL");
-			}
-
 			RestTemplate restTemplate = restTemplateBuilder
 					.errorHandler(new SkipperClientResponseErrorHandler(objectMapper))
 					.interceptors(new OAuth2AccessTokenProvidingClientHttpRequestInterceptor(oauth2TokenUtilsService))
 					.messageConverters(Arrays.asList(new StringHttpMessageConverter(),
 							new MappingJackson2HttpMessageConverter(objectMapper)))
 					.build();
+
+			if (properties.isSkipSslValidation()) {
+				//restTemplateBuilder.requestFactory(() -> org.springframework.cloud.dataflow.rest.util.HttpClientConfigurer
+				//		.create(URI.create(properties.getServerUri()))
+				//		.skipTlsCertificateVerification(true)
+				//		.buildClientHttpRequestFactory());
+				restTemplate.setRequestFactory(HttpClientConfigurer.create()
+						.targetHost(URI.create(properties.getServerUri()))
+						.skipTlsCertificateVerification(true)
+						.buildClientHttpRequestFactory());
+				logger.info("Skipper Client - Skip SSL");
+			}
+
 
 			return new DefaultSkipperClient(properties.getServerUri(), restTemplate);
 		}
