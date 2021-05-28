@@ -65,13 +65,9 @@ public class KubernetesTaskPlatformFactoryTests {
 		KubernetesPlatformProperties platformProperties = new KubernetesPlatformProperties();
 		KubernetesDeployerProperties deployerProperties = new KubernetesDeployerProperties();
 		deployerProperties.getLimits().setMemory("5555Mi");
-		KubernetesTaskLauncherProperties taskLauncherProperties = new KubernetesTaskLauncherProperties();
-		taskLauncherProperties.setBackoffLimit(5);
-		taskLauncherProperties.setRestartPolicy(RestartPolicy.Never);
 		platformProperties.setAccounts(Collections.singletonMap("k8s", deployerProperties));
-		KubernetesPlatformTaskLauncherProperties platformTaskLauncherProperties = new KubernetesPlatformTaskLauncherProperties();
 		KubernetesTaskPlatformFactory kubernetesTaskPlatformFactory = new KubernetesTaskPlatformFactory(
-				platformProperties, true, platformTaskLauncherProperties);
+				platformProperties, true, new KubernetesPlatformTaskLauncherProperties());
 
 		TaskPlatform taskPlatform = kubernetesTaskPlatformFactory.createTaskPlatform();
 		assertThat(taskPlatform.getName()).isEqualTo("Kubernetes");
