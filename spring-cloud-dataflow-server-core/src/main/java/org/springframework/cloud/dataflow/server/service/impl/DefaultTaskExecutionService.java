@@ -58,6 +58,7 @@ import org.springframework.cloud.dataflow.server.repository.TaskExecutionMissing
 import org.springframework.cloud.dataflow.server.service.TaskExecutionCreationService;
 import org.springframework.cloud.dataflow.server.service.TaskExecutionInfoService;
 import org.springframework.cloud.dataflow.server.service.TaskExecutionService;
+import org.springframework.cloud.dataflow.server.service.TaskLaunchException;
 import org.springframework.cloud.dataflow.server.service.TaskSaveService;
 import org.springframework.cloud.dataflow.server.service.impl.diff.TaskAnalysisReport;
 import org.springframework.cloud.dataflow.server.service.impl.diff.TaskAnalyzer;
@@ -257,7 +258,14 @@ public class DefaultTaskExecutionService implements TaskExecutionService {
 	public long executeTask(String taskName, Map<String, String> taskDeploymentProperties, List<String> commandLineArgs) {
 		// Get platform name and fallback to 'default'
 		String platformName = getPlatform(taskDeploymentProperties);
-
+		String platformType = StreamSupport.stream(launcherRepository.findAll().spliterator(), true)
+				.filter(deployer -> deployer.getName().equalsIgnoreCase(platformName))
+				.map(Launcher::getType)
+				.findFirst()
+				.orElse("unknown");
+		if (platformType.equals("kubernetes") && taskName.contains("_")) {
+			throw new TaskLaunchException(taskName);
+		}
 		// Naive local state to prevent parallel launches to break things up
 		if(this.tasksBeingUpgraded.containsKey(taskName)) {
 			List<String> platforms = this.tasksBeingUpgraded.get(taskName);

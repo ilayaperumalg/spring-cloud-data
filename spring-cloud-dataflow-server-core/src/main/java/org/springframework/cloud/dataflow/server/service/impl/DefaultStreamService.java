@@ -168,6 +168,10 @@ public class DefaultStreamService implements StreamService {
 				.findFirst()
 				.orElse("unknown");
 
+		if (platformType.equals("kubernetes") && streamDefinition.getName().contains("_")) {
+			throw new StreamDeploymentException(streamDefinition.getName());
+		}
+
 		List<AppDeploymentRequest> appDeploymentRequests = this.appDeploymentRequestCreator
 				.createRequests(streamDefinition, deploymentPropertiesToUse, platformType);
 

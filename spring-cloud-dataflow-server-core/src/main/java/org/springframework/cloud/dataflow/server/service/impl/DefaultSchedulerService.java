@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.cloud.dataflow.audit.service.AuditRecordService;
@@ -47,6 +48,7 @@ import org.springframework.cloud.dataflow.server.repository.NoSuchTaskDefinition
 import org.springframework.cloud.dataflow.server.repository.TaskDefinitionRepository;
 import org.springframework.cloud.dataflow.server.service.SchedulerService;
 import org.springframework.cloud.dataflow.server.service.SchedulerServiceProperties;
+import org.springframework.cloud.dataflow.server.service.TaskLaunchException;
 import org.springframework.cloud.deployer.spi.core.AppDefinition;
 import org.springframework.cloud.deployer.spi.scheduler.ScheduleInfo;
 import org.springframework.cloud.deployer.spi.scheduler.ScheduleRequest;
@@ -169,6 +171,14 @@ public class DefaultSchedulerService implements SchedulerService {
 	@Override
 	public void schedule(String scheduleName, String taskDefinitionName, Map<String, String> taskDeploymentProperties,
 			List<String> commandLineArgs, String platformName) {
+		String platformType = StreamSupport.stream(getLaunchers().spliterator(), true)
+				.filter(deployer -> deployer.getName().equalsIgnoreCase(platformName))
+				.map(Launcher::getType)
+				.findFirst()
+				.orElse("unknown");
+		if (platformType.equals(TaskPlatformFactory.KUBERNETES_PLATFORM_TYPE) && taskDefinitionName.contains("_")) {
+			throw new TaskLaunchException(taskDefinitionName);
+		}
 		Assert.hasText(taskDefinitionName, "The provided taskName must not be null or empty.");
 		Assert.notNull(taskDeploymentProperties, "The provided taskDeploymentProperties must not be null.");
 		TaskDefinition taskDefinition = this.taskDefinitionRepository.findById(taskDefinitionName)
